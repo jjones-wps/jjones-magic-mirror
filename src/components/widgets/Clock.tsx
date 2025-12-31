@@ -148,6 +148,7 @@ function is1111(time: Date): boolean {
 export default function Clock() {
   const [time, setTime] = useState<Date | null>(null);
   const [feastDay, setFeastDay] = useState<FeastDay | null>(null);
+  const [lastFetchDate, setLastFetchDate] = useState<string | null>(null);
 
   useEffect(() => {
     // Set initial time on client to avoid hydration mismatch
@@ -162,7 +163,7 @@ export default function Clock() {
     return () => clearInterval(interval);
   }, []);
 
-  // Fetch feast day on mount and refresh every hour
+  // Fetch feast day on mount and refresh hourly
   useEffect(() => {
     async function fetchFeastDay() {
       try {
@@ -170,6 +171,7 @@ export default function Clock() {
         if (response.ok) {
           const data = await response.json();
           setFeastDay(data);
+          setLastFetchDate(new Date().toDateString());
         }
       } catch (error) {
         console.error("Failed to fetch feast day:", error);
@@ -181,6 +183,23 @@ export default function Clock() {
 
     return () => clearInterval(interval);
   }, []);
+
+  // Detect date change (midnight) and refresh feast day
+  useEffect(() => {
+    if (!time || !lastFetchDate) return;
+
+    const currentDate = time.toDateString();
+    if (currentDate !== lastFetchDate) {
+      // Date changed, fetch new feast day
+      fetch("/api/feast-day")
+        .then((res) => res.json())
+        .then((data) => {
+          setFeastDay(data);
+          setLastFetchDate(currentDate);
+        })
+        .catch((err) => console.error("Failed to fetch feast day on date change:", err));
+    }
+  }, [time, lastFetchDate]);
 
   // Memoize derived values
   const { hours, minutes, period, dateStr, greeting, isSpecialTime } =
