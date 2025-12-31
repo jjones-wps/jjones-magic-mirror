@@ -1,5 +1,7 @@
 # Magic Mirror
 
+[![Deploy](https://github.com/jjones-wps/jjones-magic-mirror/actions/workflows/deploy.yml/badge.svg)](https://github.com/jjones-wps/jjones-magic-mirror/actions/workflows/deploy.yml)
+
 A smart magic mirror display built with Next.js, designed for a 1080x2560 portrait display running on a Raspberry Pi.
 
 ## Features
@@ -99,21 +101,24 @@ npm run lint     # Run ESLint
 
 ## Raspberry Pi Deployment
 
-The mirror runs on a Raspberry Pi with pm2 process manager.
+The mirror runs on a Raspberry Pi with pm2 process manager and **automated push-to-deploy** via GitHub Actions.
 
 ### Deploy Changes
 
+Just push to main - deployment is automatic:
+
 ```bash
-# From your dev machine after committing
-ssh user@raspberry-pi "/path/to/magic-mirror/deploy.sh"
+git push origin main
 ```
 
-The deploy script:
-1. Pulls latest from git
-2. Installs dependencies
-3. Builds for production
-4. Restarts the pm2 server
-5. Verifies health
+A self-hosted GitHub Actions runner on the Pi will:
+1. Pull latest from git
+2. Install dependencies
+3. Build for production
+4. Restart the pm2 server
+5. Verify health
+
+Monitor deploys at the [Actions tab](https://github.com/jjones-wps/jjones-magic-mirror/actions).
 
 ### Auto-Refresh
 
