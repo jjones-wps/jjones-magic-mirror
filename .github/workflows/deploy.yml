@@ -1,0 +1,26 @@
+name: Deploy to Magic Mirror
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+  workflow_dispatch: # Manual trigger from GitHub UI
+
+concurrency:
+  group: deploy
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    name: Deploy to Raspberry Pi
+    runs-on: [self-hosted, raspberry-pi]
+    timeout-minutes: 10
+
+    steps:
+      - name: Run deploy script
+        run: /home/jjones/magic-mirror/deploy.sh
+
+      - name: Report success
+        run: echo "Deployment completed successfully!"
