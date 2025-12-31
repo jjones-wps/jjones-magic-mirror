@@ -96,16 +96,18 @@ function generateTemplateSummary(context: ContextData): string {
     parts.push(`It's ${temperature}° and ${conditions.toLowerCase()} outside.`);
 
     // Check for precipitation in forecast
-    if (context.weather.daily?.[0]?.precipitationProbability > 50) {
-      parts.push(`There's a ${context.weather.daily[0].precipitationProbability}% chance of precipitation today.`);
+    const precipProb = context.weather.daily?.[0]?.precipitationProbability;
+    if (precipProb !== undefined && precipProb > 50) {
+      parts.push(`There's a ${precipProb}% chance of precipitation today.`);
     }
   }
 
   // Calendar summary
-  if (context.calendar?.todayEvents?.length > 0) {
-    const count = context.calendar.todayEvents.length;
+  const todayEvents = context.calendar?.todayEvents ?? [];
+  if (todayEvents.length > 0) {
+    const count = todayEvents.length;
     if (count === 1) {
-      parts.push(`You have 1 event on your calendar today: ${context.calendar.todayEvents[0].title}.`);
+      parts.push(`You have 1 event on your calendar today: ${todayEvents[0].title}.`);
     } else {
       parts.push(`You have ${count} events on your calendar today.`);
     }
@@ -115,7 +117,7 @@ function generateTemplateSummary(context: ContextData): string {
 
   // Add a contextual tip based on conditions
   if (context.weather?.current) {
-    const tip = getContextualTip(context.weather.current, context.calendar?.todayEvents?.length || 0);
+    const tip = getContextualTip(context.weather.current, todayEvents.length);
     if (tip) parts.push(tip);
   }
 
