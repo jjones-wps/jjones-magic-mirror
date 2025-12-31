@@ -228,3 +228,22 @@ export function createTransition(
     ease: easings[ease],
   };
 }
+
+/**
+ * Create a breathing animation with custom timing
+ */
+export function createBreathingAnimation(
+  durationSeconds: number = 3,
+  minOpacity: number = 0.7
+) {
+  return {
+    animate: {
+      opacity: [1, minOpacity, 1],
+      transition: {
+        duration: durationSeconds,
+        ease: "easeInOut" as const,
+        repeat: Infinity,
+      },
+    },
+  };
+}
