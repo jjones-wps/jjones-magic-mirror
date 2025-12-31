@@ -1,0 +1,135 @@
+// Magic Mirror Admin - Prisma Schema
+// Database: SQLite (lightweight, perfect for Pi)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+// ============================================
+// Authentication
+// ============================================
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String?
+  role         String   @default("admin") // admin, viewer
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  lastLoginAt  DateTime?
+
+  // Relations
+  activityLogs ActivityLog[]
+}
+
+// ============================================
+// Settings Storage
+// ============================================
+
+model Setting {
+  id        String   @id // e.g., "calendar.primaryUrl", "weather.latitude"
+  value     String   // JSON serialized value
+  category  String   // calendar, weather, display, commute, etc.
+  label     String?  // Human-readable label
+  encrypted Boolean  @default(false) // For sensitive values
+  updatedAt DateTime @updatedAt
+  updatedBy String?  // User ID who last changed
+}
+
+// ============================================
+// Widget Configuration
+// ============================================
+
+model Widget {
+  id          String   @id // clock, weather, calendar, news, summary, commute, feastday, spotify
+  name        String
+  description String?
+  enabled     Boolean  @default(true)
+  order       Int      @default(0)
+  settings    String?  // JSON - widget-specific settings
+  updatedAt   DateTime @updatedAt
+}
+
+// ============================================
+// Calendar Feeds
+// ============================================
+
+model CalendarFeed {
+  id          String   @id @default(cuid())
+  name        String
+  url         String
+  enabled     Boolean  @default(true)
+  color       String?  // Optional color for events from this feed
+  lastSync    DateTime?
+  lastError   String?
+  eventCount  Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// ============================================
+// Commute Routes
+// ============================================
+
+model CommuteRoute {
+  id          String   @id @default(cuid())
+  name        String   // e.g., "Jack", "Lauren"
+  originLat   Float
+  originLon   Float
+  destLat     Float
+  destLon     Float
+  arrivalTime String   // e.g., "08:00"
+  daysActive  String   @default("1,2,3,4,5") // 0=Sun, 1=Mon, etc.
+  enabled     Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// ============================================
+// Config Version (for mirror polling)
+// ============================================
+
+model ConfigVersion {
+  id           String   @id @default("current")
+  version      Int      @default(0)
+  forceRefresh Boolean  @default(false)
+  updatedAt    DateTime @updatedAt
+}
+
+// ============================================
+// Activity Logging
+// ============================================
+
+model ActivityLog {
+  id        String   @id @default(cuid())
+  action    String   // settings.update, mirror.refresh, auth.login, etc.
+  category  String   // auth, settings, mirror, system
+  details   String?  // JSON - additional context
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id])
+  ipAddress String?
+  createdAt DateTime @default(now())
+
+  @@index([category])
+  @@index([createdAt])
+}
+
+// ============================================
+// System State
+// ============================================
+
+model SystemState {
+  id         String   @id @default("mirror")
+  online     Boolean  @default(true)
+  lastPing   DateTime @default(now())
+  version    String?  // Git commit hash
+  uptime     Int      @default(0) // Seconds
+  memoryUsage Float?  // MB
+  cpuUsage   Float?   // Percentage
+  updatedAt  DateTime @updatedAt
+}

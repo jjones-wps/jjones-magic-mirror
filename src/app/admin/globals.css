@@ -1,0 +1,461 @@
+/* Admin Portal - Control Room Elegance Theme */
+
+@import url('https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+:root {
+  /* Core Palette - Monochrome Foundation */
+  --admin-bg: #0a0a0a;
+  --admin-surface: #111111;
+  --admin-surface-elevated: #1a1a1a;
+  --admin-surface-hover: #222222;
+  --admin-border: #2a2a2a;
+  --admin-border-subtle: #1f1f1f;
+
+  /* Text Hierarchy */
+  --admin-text-primary: #fafafa;
+  --admin-text-secondary: rgba(250, 250, 250, 0.7);
+  --admin-text-tertiary: rgba(250, 250, 250, 0.5);
+  --admin-text-muted: rgba(250, 250, 250, 0.3);
+
+  /* Status Colors - Muted for Sophistication */
+  --admin-success: #22c55e;
+  --admin-success-muted: rgba(34, 197, 94, 0.15);
+  --admin-warning: #eab308;
+  --admin-warning-muted: rgba(234, 179, 8, 0.15);
+  --admin-error: #ef4444;
+  --admin-error-muted: rgba(239, 68, 68, 0.15);
+  --admin-info: #3b82f6;
+  --admin-info-muted: rgba(59, 130, 246, 0.15);
+
+  /* Interactive */
+  --admin-accent: #ffffff;
+  --admin-accent-muted: rgba(255, 255, 255, 0.1);
+
+  /* Spacing Scale */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+  --space-2xl: 48px;
+  --space-3xl: 64px;
+
+  /* Typography */
+  --font-sans: 'Instrument Sans', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+
+  /* Transitions */
+  --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-base: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-slow: 400ms cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.5);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.5);
+  --shadow-glow: 0 0 20px rgba(255, 255, 255, 0.05);
+
+  /* Border Radius */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-full: 9999px;
+}
+
+/* Base Admin Styles */
+.admin-portal {
+  font-family: var(--font-sans);
+  background: var(--admin-bg);
+  color: var(--admin-text-primary);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  cursor: auto;
+  user-select: auto;
+}
+
+/* Override mirror's cursor hiding for admin */
+.admin-portal * {
+  cursor: inherit;
+}
+
+.admin-portal a,
+.admin-portal button,
+.admin-portal [role="button"],
+.admin-portal input[type="submit"],
+.admin-portal input[type="button"],
+.admin-portal select,
+.admin-portal .admin-toggle,
+.admin-portal .admin-nav-item {
+  cursor: pointer;
+}
+
+.admin-portal input,
+.admin-portal textarea {
+  cursor: text;
+}
+
+/* Subtle grid pattern background */
+.admin-portal::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+  background-size: 32px 32px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Typography Classes */
+.admin-heading-xl {
+  font-family: var(--font-sans);
+  font-size: 2rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+.admin-heading-lg {
+  font-family: var(--font-sans);
+  font-size: 1.5rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.3;
+}
+
+.admin-heading-md {
+  font-family: var(--font-sans);
+  font-size: 1.125rem;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  line-height: 1.4;
+}
+
+.admin-label {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--admin-text-tertiary);
+}
+
+.admin-mono {
+  font-family: var(--font-mono);
+  font-size: 0.875rem;
+}
+
+/* Card Component */
+.admin-card {
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--radius-lg);
+  padding: var(--space-lg);
+  transition:
+    border-color var(--transition-fast),
+    box-shadow var(--transition-fast);
+}
+
+.admin-card:hover {
+  border-color: var(--admin-border);
+  box-shadow: var(--shadow-glow);
+}
+
+.admin-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-lg);
+  padding-bottom: var(--space-md);
+  border-bottom: 1px solid var(--admin-border-subtle);
+}
+
+/* Status Indicator */
+.admin-status {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-sm);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.admin-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  animation: pulse 2s infinite;
+}
+
+.admin-status-dot.online {
+  background: var(--admin-success);
+  box-shadow: 0 0 8px var(--admin-success);
+}
+
+.admin-status-dot.offline {
+  background: var(--admin-error);
+  box-shadow: 0 0 8px var(--admin-error);
+  animation: none;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* Button Variants */
+.admin-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-sm);
+  padding: var(--space-sm) var(--space-md);
+  font-family: var(--font-sans);
+  font-size: 0.875rem;
+  font-weight: 500;
+  border-radius: var(--radius-sm);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  white-space: nowrap;
+}
+
+.admin-btn-primary {
+  background: var(--admin-text-primary);
+  color: var(--admin-bg);
+  border-color: var(--admin-text-primary);
+}
+
+.admin-btn-primary:hover {
+  background: transparent;
+  color: var(--admin-text-primary);
+}
+
+.admin-btn-secondary {
+  background: transparent;
+  color: var(--admin-text-primary);
+  border-color: var(--admin-border);
+}
+
+.admin-btn-secondary:hover {
+  background: var(--admin-surface-hover);
+  border-color: var(--admin-text-tertiary);
+}
+
+.admin-btn-ghost {
+  background: transparent;
+  color: var(--admin-text-secondary);
+  border-color: transparent;
+}
+
+.admin-btn-ghost:hover {
+  background: var(--admin-accent-muted);
+  color: var(--admin-text-primary);
+}
+
+.admin-btn-danger {
+  background: var(--admin-error-muted);
+  color: var(--admin-error);
+  border-color: transparent;
+}
+
+.admin-btn-danger:hover {
+  background: var(--admin-error);
+  color: white;
+}
+
+/* Input Styles */
+.admin-input {
+  width: 100%;
+  padding: var(--space-sm) var(--space-md);
+  font-family: var(--font-mono);
+  font-size: 0.875rem;
+  background: var(--admin-bg);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--radius-sm);
+  color: var(--admin-text-primary);
+  transition: all var(--transition-fast);
+}
+
+.admin-input:focus {
+  outline: none;
+  border-color: var(--admin-text-tertiary);
+  box-shadow: 0 0 0 3px var(--admin-accent-muted);
+}
+
+.admin-input::placeholder {
+  color: var(--admin-text-muted);
+}
+
+/* Toggle Switch */
+.admin-toggle {
+  position: relative;
+  width: 44px;
+  height: 24px;
+  background: var(--admin-border);
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+
+.admin-toggle.active {
+  background: var(--admin-success);
+}
+
+.admin-toggle-knob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 20px;
+  height: 20px;
+  background: var(--admin-text-primary);
+  border-radius: 50%;
+  transition: transform var(--transition-fast);
+  box-shadow: var(--shadow-sm);
+}
+
+.admin-toggle.active .admin-toggle-knob {
+  transform: translateX(20px);
+}
+
+/* Metric Display */
+.admin-metric {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.admin-metric-value {
+  font-family: var(--font-mono);
+  font-size: 1.75rem;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+
+.admin-metric-label {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--admin-text-tertiary);
+}
+
+/* Navigation */
+.admin-nav {
+  display: flex;
+  gap: var(--space-xs);
+  padding: var(--space-xs);
+  background: var(--admin-surface);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--admin-border-subtle);
+}
+
+.admin-nav-item {
+  padding: var(--space-sm) var(--space-md);
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--admin-text-secondary);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.admin-nav-item:hover {
+  color: var(--admin-text-primary);
+  background: var(--admin-surface-hover);
+}
+
+.admin-nav-item.active {
+  color: var(--admin-text-primary);
+  background: var(--admin-accent-muted);
+}
+
+/* Widget Card */
+.admin-widget-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-md);
+  background: var(--admin-surface-elevated);
+  border: 1px solid var(--admin-border-subtle);
+  border-radius: var(--radius-md);
+  transition: all var(--transition-fast);
+}
+
+.admin-widget-card:hover {
+  border-color: var(--admin-border);
+}
+
+.admin-widget-card.disabled {
+  opacity: 0.5;
+}
+
+.admin-widget-info {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+}
+
+.admin-widget-icon {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--admin-accent-muted);
+  border-radius: var(--radius-sm);
+  font-size: 1.25rem;
+}
+
+/* Responsive Grid */
+.admin-grid {
+  display: grid;
+  gap: var(--space-lg);
+}
+
+.admin-grid-2 {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.admin-grid-3 {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.admin-grid-4 {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+@media (max-width: 768px) {
+  .admin-grid-2,
+  .admin-grid-3,
+  .admin-grid-4 {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Page Animations */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.admin-animate-in {
+  animation: fadeInUp 0.4s ease-out forwards;
+}
+
+.admin-animate-in-delay-1 { animation-delay: 50ms; }
+.admin-animate-in-delay-2 { animation-delay: 100ms; }
+.admin-animate-in-delay-3 { animation-delay: 150ms; }
+.admin-animate-in-delay-4 { animation-delay: 200ms; }
