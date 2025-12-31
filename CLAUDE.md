@@ -15,41 +15,62 @@ npm run start    # Start production server
 npm run lint     # Run ESLint
 ```
 
-## Current Development Setup (Dec 2024)
+## Raspberry Pi Production Setup
 
-### Local Dev → Pi Display Workflow
+The Pi runs the Next.js server locally with pm2 process manager.
 
-The development environment runs on a Windows 11 machine with WSL2, displaying on a Raspberry Pi:
+**Pi Details:**
+- IP: `192.168.1.213`
+- SSH: `ssh jjones@192.168.1.213`
+- Timezone: `America/Indiana/Indianapolis` (EST)
+- Node.js: v22.21.0
 
-**Network Configuration:**
-- Dev machine: 192.168.1.190 (WSL2 with mirrored networking)
-- Raspberry Pi: 192.168.1.213 (kiosk mode with Chromium)
-- Both on same network (192.168.1.x)
-
-**Required Windows Setup (one-time):**
-1. Port forwarding from Windows to WSL2:
-   ```powershell
-   # Run as Administrator
-   netsh interface portproxy add v4tov4 listenaddress=0.0.0.0 listenport=3000 connectaddress=127.0.0.1 connectport=3001
-   ```
-2. Firewall rule for port 3000:
-   ```powershell
-   # Run as Administrator
-   netsh advfirewall firewall add rule name="Magic Mirror Dev Server" dir=in action=allow protocol=TCP localport=3000
-   ```
-
-**Starting Dev Server:**
-```bash
-npm run dev -- -H 0.0.0.0
-# Note: If port 3000 is taken by the port proxy, it will use 3001
-# The port proxy forwards external :3000 → localhost:3001
+**Key Paths on Pi:**
+```
+/home/jjones/magic-mirror/     # App directory (git repo)
+/home/jjones/magic-mirror/.env.local  # Environment config
+/home/jjones/magic-mirror/deploy.sh   # Deployment script
+/home/jjones/magic-mirror/kiosk.sh    # Chromium kiosk launcher
 ```
 
-**Pi Kiosk Config:**
-- SSH: `ssh jjones@192.168.1.213` (password: WhatFish88!)
-- Kiosk script: `/home/jjones/magic-mirror/kiosk.sh`
-- URL configured: `http://192.168.1.190:3000`
-- Auto-refresh: VersionChecker refreshes every 60s in dev mode
+**Process Manager (pm2):**
+```bash
+pm2 status              # Check server status
+pm2 logs magic-mirror   # View server logs
+pm2 restart magic-mirror # Quick restart (no rebuild)
+```
+
+### Deploying Changes
+
+**From dev machine (recommended workflow):**
+```bash
+# 1. Commit and push changes
+git add . && git commit -m "your changes" && git push
+
+# 2. Deploy to Pi
+ssh jjones@192.168.1.213 "/home/jjones/magic-mirror/deploy.sh"
+```
+
+**What the deploy script does:**
+1. 📥 Pulls latest from git (`git reset --hard origin/main`)
+2. 📦 Installs dependencies (`npm ci`)
+3. 🔨 Builds production (`npm run build`)
+4. ♻️ Restarts pm2 server
+5. ✅ Verifies health (HTTP 200 check)
+
+### Local Development (Optional)
+
+For local development with Pi display:
+
+**Dev machine setup:**
+- Dev machine: 192.168.1.190 (WSL2)
+- Start server: `npm run dev -- -H 0.0.0.0`
+
+**To switch Pi to dev mode (temporary):**
+```bash
+# On Pi, edit kiosk.sh to point to dev machine
+# Change: http://localhost:3000 → http://192.168.1.190:3000
+```
 
 ### Dev Mode Auto-Refresh
 
@@ -74,12 +95,13 @@ src/
 ├── app/
 │   ├── api/           # Next.js API routes (server-side data fetching)
 │   │   ├── calendar/  # iCal feed parser
-│   │   ├── weather/   # Open-Meteo weather proxy
+│   │   ├── commute/   # TomTom traffic-aware routing
+│   │   ├── feast-day/ # Catholic liturgical calendar (romcal)
 │   │   ├── news/      # News headlines with RSS parsing
 │   │   ├── spotify/   # Spotify OAuth + now-playing
 │   │   ├── summary/   # AI daily briefing (OpenRouter)
 │   │   ├── version/   # Build version for auto-refresh
-│   │   └── feast-day/ # Catholic liturgical calendar (romcal)
+│   │   └── weather/   # Open-Meteo weather proxy
 │   ├── globals.css    # Design system CSS variables + utilities
 │   ├── layout.tsx     # Root layout with Syne + DM Sans fonts
 │   └── page.tsx       # Main mirror page composition
@@ -91,6 +113,7 @@ src/
     ├── tokens.ts      # Framer Motion animation tokens
     ├── weather.ts     # Weather data types and client-side utils
     ├── calendar.ts    # Calendar types and demo data
+    ├── commute.ts     # TomTom API helpers, commute types
     └── news.ts        # News data types
 ```
 
@@ -147,6 +170,17 @@ SPOTIFY_CLIENT_SECRET=...
 # AI Summary (OpenRouter)
 OPENROUTER_API_KEY=...
 OPENROUTER_MODEL=anthropic/claude-3-haiku
+
+# TomTom Commute (traffic-aware routing)
+TOMTOM_API_KEY=...
+COMMUTE_1_NAME=Jack
+COMMUTE_1_ORIGIN=41.0454,-85.1455      # lat,lon coordinates
+COMMUTE_1_DESTINATION=41.1327,-85.1762
+COMMUTE_1_ARRIVAL_TIME=08:00
+COMMUTE_2_NAME=Lauren
+COMMUTE_2_ORIGIN=41.0454,-85.1455
+COMMUTE_2_DESTINATION=41.0421,-85.2409
+COMMUTE_2_ARRIVAL_TIME=08:00
 ```
 
 ## Widget Development
@@ -189,35 +223,27 @@ Target device is Raspberry Pi:
 - Keep animations smooth (2-4 second breathing rhythms)
 - Respect `prefers-reduced-motion` media query
 
-## Deployment (Coolify on TrueNAS)
+## Deployment
 
-The app is deployed via Coolify with push-to-deploy:
+See "Raspberry Pi Production Setup" section above for the current git-based deployment workflow.
 
-1. Push to `main` branch triggers automatic rebuild
-2. Coolify builds using the multi-stage `Dockerfile`
-3. `BUILD_TIME` env var is set at build time for version tracking
-4. Pi's browser points to `http://truenas:3000` (or configured hostname)
-
-### Version-Aware Auto-Refresh
-
-The `VersionChecker` component (`src/components/VersionChecker.tsx`):
-- Polls `/api/version` every 30 seconds
+The `VersionChecker` component (`src/components/VersionChecker.tsx`) provides auto-refresh:
+- Polls `/api/version` every 30 seconds (production) or 60 seconds (dev)
 - Compares `BUILD_TIME` from build vs current server
 - On mismatch, shows "Updating..." indicator and refreshes after 2s
-
-This enables seamless deploys without manual Pi intervention.
 
 ## Key Files Modified This Session
 
 | File | Changes |
 |------|---------|
-| `src/app/api/summary/route.ts` | Added `getTimeOfDay()` for dynamic prompts, enhanced news context with descriptions |
-| `src/app/api/news/route.ts` | Fixed HTML entity decoding, increased description limit to 300 chars |
-| `src/app/api/feast-day/route.ts` | NEW - Catholic liturgical calendar using romcal |
-| `src/components/widgets/Clock.tsx` | Added feast day fetching and display |
-| `src/components/widgets/AISummary.tsx` | Dev mode 2-minute refresh |
-| `src/components/VersionChecker.tsx` | Dev mode 60-second auto-refresh |
+| `src/lib/commute.ts` | NEW - TomTom API utilities, types, demo data |
+| `src/app/api/commute/route.ts` | NEW - Commute API with TomTom routing integration |
+| `src/components/widgets/Commute.tsx` | NEW - Rotating commute widget (workday mornings only) |
+| `src/components/widgets/Clock.tsx` | Feast day with midnight refresh detection |
+| `src/app/api/summary/route.ts` | TypeScript strict mode fixes |
+| `deploy.sh` | NEW - Pi deployment script (on Pi only) |
+| `kiosk.sh` | Updated to use localhost:3000 |
 
 ## Dependencies Added
 
-- `romcal` - Catholic liturgical calendar calculations (generates feast days, seasons, colors locally without external API)
+- `romcal` - Catholic liturgical calendar calculations
