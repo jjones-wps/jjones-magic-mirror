@@ -4,6 +4,7 @@ import Calendar from "@/components/widgets/Calendar";
 import News from "@/components/widgets/News";
 import AISummary from "@/components/widgets/AISummary";
 import Spotify from "@/components/widgets/Spotify";
+import Commute from "@/components/widgets/Commute";
 
 export default function MirrorPage() {
   return (
@@ -28,6 +29,11 @@ export default function MirrorPage() {
       {/* Spotify Now Playing (only shows when configured and playing) */}
       <section>
         <Spotify />
+      </section>
+
+      {/* Commute Section (only shows on workday mornings 6-9 AM) */}
+      <section>
+        <Commute />
       </section>
 
       {/* Weather Section */}
