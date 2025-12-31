@@ -1,0 +1,24 @@
+# Dependencies
+node_modules
+
+# Build output
+.next
+out
+build
+
+# Git
+.git
+.gitignore
+
+# Environment files (will be provided by Coolify)
+.env*
+
+# IDE
+.vscode
+.idea
+
+# Misc
+*.md
+!README.md
+.DS_Store
+*.log

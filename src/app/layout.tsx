@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Syne, DM_Sans } from "next/font/google";
 import "./globals.css";
+import VersionChecker from "@/components/VersionChecker";
 
 // Display font - unique geometric character for headlines
 const syne = Syne({
@@ -36,6 +37,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${syne.variable} ${dmSans.variable} antialiased`}>
+        <VersionChecker />
         {children}
       </body>
     </html>

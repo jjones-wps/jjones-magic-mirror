@@ -117,3 +117,21 @@ Target device is Raspberry Pi:
 - Avoid backdrop-blur, SVG filters, heavy particle systems
 - Keep animations smooth (2-4 second breathing rhythms)
 - Respect `prefers-reduced-motion` media query
+
+## Deployment (Coolify on TrueNAS)
+
+The app is deployed via Coolify with push-to-deploy:
+
+1. Push to `main` branch triggers automatic rebuild
+2. Coolify builds using the multi-stage `Dockerfile`
+3. `BUILD_TIME` env var is set at build time for version tracking
+4. Pi's browser points to `http://truenas:3000` (or configured hostname)
+
+### Version-Aware Auto-Refresh
+
+The `VersionChecker` component (`src/components/VersionChecker.tsx`):
+- Polls `/api/version` every 30 seconds
+- Compares `BUILD_TIME` from build vs current server
+- On mismatch, shows "Updating..." indicator and refreshes after 2s
+
+This enables seamless deploys without manual Pi intervention.
