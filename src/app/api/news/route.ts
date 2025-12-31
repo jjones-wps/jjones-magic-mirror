@@ -84,7 +84,7 @@ async function fetchRSSFeed(
           source,
           link: link || "",
           pubDate: pubDate ? new Date(pubDate).toISOString() : new Date().toISOString(),
-          description: description ? cleanText(description).slice(0, 200) : undefined,
+          description: description ? cleanText(description).slice(0, 300) : undefined,
         });
       }
     }
@@ -107,11 +107,12 @@ function extractTag(xml: string, tag: string): string | null {
 function cleanText(text: string): string {
   return text
     .replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, "$1") // Remove CDATA
+    .replace(/&#(\d+);/g, (_, num) => String.fromCharCode(parseInt(num, 10))) // Numeric entities
     .replace(/&amp;/g, "&")
     .replace(/&lt;/g, "<")
     .replace(/&gt;/g, ">")
     .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
+    .replace(/&apos;/g, "'")
     .replace(/&nbsp;/g, " ")
     .replace(/<[^>]+>/g, "") // Strip HTML tags
     .trim();

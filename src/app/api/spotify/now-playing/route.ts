@@ -5,6 +5,11 @@
 
 import { NextResponse } from "next/server";
 
+// Spotify API types (subset we use)
+interface SpotifyArtist {
+  name: string;
+}
+
 const SPOTIFY_TOKEN_URL = "https://accounts.spotify.com/api/token";
 const SPOTIFY_NOW_PLAYING_URL = "https://api.spotify.com/v1/me/player/currently-playing";
 
@@ -107,7 +112,7 @@ export async function GET() {
       configured: true,
       type: "track",
       title: data.item?.name || "Unknown Track",
-      artist: data.item?.artists?.map((a: any) => a.name).join(", ") || "Unknown Artist",
+      artist: data.item?.artists?.map((a: SpotifyArtist) => a.name).join(", ") || "Unknown Artist",
       album: data.item?.album?.name || "Unknown Album",
       imageUrl: data.item?.album?.images?.[0]?.url,
       progress: data.progress_ms,

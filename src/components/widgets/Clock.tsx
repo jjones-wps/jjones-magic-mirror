@@ -12,6 +12,16 @@ import {
 } from "@/lib/tokens";
 
 // ============================================
+// FEAST DAY TYPE
+// ============================================
+interface FeastDay {
+  feastDay: string | null;
+  season: string | null;
+  color: string | null;
+  rank: string | null;
+}
+
+// ============================================
 // GEOMETRIC RING COMPONENT
 // Decorative SVG rings around the clock
 // ============================================
@@ -137,15 +147,37 @@ function is1111(time: Date): boolean {
 // ============================================
 export default function Clock() {
   const [time, setTime] = useState<Date | null>(null);
+  const [feastDay, setFeastDay] = useState<FeastDay | null>(null);
 
   useEffect(() => {
-    // Set initial time
+    // Set initial time on client to avoid hydration mismatch
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setTime(new Date());
 
     // Update every second
     const interval = setInterval(() => {
       setTime(new Date());
     }, 1000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  // Fetch feast day on mount and refresh every hour
+  useEffect(() => {
+    async function fetchFeastDay() {
+      try {
+        const response = await fetch("/api/feast-day");
+        if (response.ok) {
+          const data = await response.json();
+          setFeastDay(data);
+        }
+      } catch (error) {
+        console.error("Failed to fetch feast day:", error);
+      }
+    }
+
+    fetchFeastDay();
+    const interval = setInterval(fetchFeastDay, 60 * 60 * 1000); // Refresh hourly
 
     return () => clearInterval(interval);
   }, []);
@@ -258,6 +290,23 @@ export default function Clock() {
           {dateStr}
         </span>
       </motion.div>
+
+      {/* Feast day display */}
+      {feastDay?.feastDay && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.65, duration: 0.6 }}
+          className="mt-3"
+        >
+          <span
+            className="text-mirror-base font-extralight tracking-wide font-body italic"
+            style={{ opacity: opacity.tertiary }}
+          >
+            {feastDay.feastDay}
+          </span>
+        </motion.div>
+      )}
 
       {/* Time-based greeting */}
       <motion.div

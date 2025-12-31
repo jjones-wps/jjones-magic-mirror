@@ -16,6 +16,42 @@ interface SummaryResponse {
   lastUpdated: string;
 }
 
+// Context data types for AI summary generation
+interface WeatherCurrent {
+  temperature: number;
+  weatherCode: number;
+}
+
+interface WeatherData {
+  current?: WeatherCurrent;
+  daily?: Array<{
+    precipitationProbability?: number;
+  }>;
+}
+
+interface CalendarEvent {
+  title: string;
+}
+
+interface CalendarData {
+  todayEvents?: CalendarEvent[];
+}
+
+interface NewsArticle {
+  title: string;
+  description?: string;
+}
+
+interface NewsData {
+  articles?: NewsArticle[];
+}
+
+interface ContextData {
+  weather: WeatherData | null;
+  calendar: CalendarData | null;
+  news: NewsData | null;
+}
+
 // ============================================
 // HELPER: Get time-based greeting
 // ============================================
@@ -32,7 +68,7 @@ function getGreeting(): string {
 // HELPER: Fetch current data for context
 // ============================================
 
-async function fetchContextData(baseUrl: string) {
+async function fetchContextData(baseUrl: string): Promise<ContextData> {
   const [weatherRes, calendarRes, newsRes] = await Promise.all([
     fetch(`${baseUrl}/api/weather`).catch(() => null),
     fetch(`${baseUrl}/api/calendar`).catch(() => null),
@@ -50,11 +86,7 @@ async function fetchContextData(baseUrl: string) {
 // HELPER: Generate template-based summary
 // ============================================
 
-function generateTemplateSummary(context: {
-  weather: any;
-  calendar: any;
-  news: any;
-}): string {
+function generateTemplateSummary(context: ContextData): string {
   const parts: string[] = [];
 
   // Weather summary
@@ -115,7 +147,7 @@ function getWeatherDescription(code: number): string {
   return descriptions[code] || "Variable conditions";
 }
 
-function getContextualTip(weather: any, eventCount: number): string | null {
+function getContextualTip(weather: WeatherCurrent, eventCount: number): string | null {
   const tips: string[] = [];
 
   // Weather-based tips
@@ -152,11 +184,7 @@ function getContextualTip(weather: any, eventCount: number): string | null {
 const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 const DEFAULT_MODEL = process.env.OPENROUTER_MODEL || "anthropic/claude-3-haiku";
 
-async function generateAISummary(context: {
-  weather: any;
-  calendar: any;
-  news: any;
-}): Promise<string | null> {
+async function generateAISummary(context: ContextData): Promise<string | null> {
   const apiKey = process.env.OPENROUTER_API_KEY;
 
   if (!apiKey) {
@@ -204,8 +232,17 @@ async function generateAISummary(context: {
   }
 }
 
-function buildPrompt(context: { weather: any; calendar: any; news: any }): string {
-  const parts: string[] = ["Generate a brief morning briefing based on:"];
+function getTimeOfDay(): string {
+  const hour = new Date().getHours();
+  if (hour >= 5 && hour < 12) return "morning";
+  if (hour >= 12 && hour < 17) return "afternoon";
+  if (hour >= 17 && hour < 21) return "evening";
+  return "night";
+}
+
+function buildPrompt(context: ContextData): string {
+  const timeOfDay = getTimeOfDay();
+  const parts: string[] = [`Generate a brief ${timeOfDay} briefing based on:`];
 
   if (context.weather?.current) {
     parts.push(
@@ -213,22 +250,25 @@ function buildPrompt(context: { weather: any; calendar: any; news: any }): strin
     );
   }
 
-  if (context.calendar?.todayEvents?.length > 0) {
+  if (context.calendar?.todayEvents && context.calendar.todayEvents.length > 0) {
     const events = context.calendar.todayEvents
       .slice(0, 3)
-      .map((e: any) => e.title)
+      .map((e: CalendarEvent) => e.title)
       .join(", ");
     parts.push(`Today's events: ${events}`);
   } else {
     parts.push("No events scheduled today.");
   }
 
-  if (context.news?.articles?.length > 0) {
-    const headlines = context.news.articles
-      .slice(0, 2)
-      .map((a: any) => a.title)
-      .join("; ");
-    parts.push(`Top headlines: ${headlines}`);
+  if (context.news?.articles && context.news.articles.length > 0) {
+    const newsItems = context.news.articles
+      .slice(0, 3)
+      .map((a: NewsArticle) => {
+        const desc = a.description ? ` - ${a.description}` : "";
+        return `• ${a.title}${desc}`;
+      })
+      .join("\n");
+    parts.push(`Top news:\n${newsItems}`);
   }
 
   return parts.join("\n");

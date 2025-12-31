@@ -25,14 +25,6 @@ export interface NewsData {
 // RSS PARSING
 // ============================================
 
-interface RSSItem {
-  title?: string;
-  link?: string;
-  pubDate?: string;
-  description?: string;
-  guid?: string;
-}
-
 async function parseRSSFeed(
   url: string,
   source: string

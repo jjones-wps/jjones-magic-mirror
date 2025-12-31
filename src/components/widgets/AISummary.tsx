@@ -8,7 +8,8 @@ import { opacity, staggerContainer, staggerItem } from "@/lib/tokens";
 // ============================================
 // CONFIGURATION
 // ============================================
-const REFRESH_INTERVAL = 30 * 60 * 1000; // 30 minutes
+const IS_DEV = process.env.NODE_ENV === "development";
+const REFRESH_INTERVAL = IS_DEV ? 2 * 60 * 1000 : 30 * 60 * 1000; // 2 min dev, 30 min prod
 
 // ============================================
 // API RESPONSE TYPE

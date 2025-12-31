@@ -53,10 +53,9 @@ function AnimatedNumber({ value, suffix = "", className = "" }: AnimatedNumberPr
 interface ForecastDayProps {
   day: DailyForecast;
   isToday: boolean;
-  index: number;
 }
 
-function ForecastDay({ day, isToday, index }: ForecastDayProps) {
+function ForecastDay({ day, isToday }: ForecastDayProps) {
   const dayName = isToday ? "Today" : format(day.date, "EEE");
 
   return (
@@ -246,7 +245,7 @@ export default function Weather() {
         </div>
 
         <motion.div variants={staggerContainer} initial="initial" animate="animate">
-          {weather.daily.slice(0, 7).map((day, i) => {
+          {weather.daily.slice(0, 7).map((day) => {
             const isToday =
               format(day.date, "yyyy-MM-dd") === format(today, "yyyy-MM-dd");
             return (
@@ -254,7 +253,6 @@ export default function Weather() {
                 key={day.date.toISOString()}
                 day={day}
                 isToday={isToday}
-                index={i}
               />
             );
           })}

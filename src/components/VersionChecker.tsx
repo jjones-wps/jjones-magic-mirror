@@ -7,6 +7,9 @@ import { opacity } from "@/lib/tokens";
 // Poll interval in milliseconds (30 seconds)
 const POLL_INTERVAL = 30 * 1000;
 
+// In dev mode, auto-refresh every 60 seconds to pick up changes
+const DEV_REFRESH_INTERVAL = 60 * 1000;
+
 // Grace period before refresh to let animations complete (2 seconds)
 const REFRESH_DELAY = 2000;
 
@@ -20,6 +23,8 @@ export default function VersionChecker() {
   const initialBuildTime = useRef<string | null>(null);
 
   useEffect(() => {
+    let devRefreshTimeout: NodeJS.Timeout | null = null;
+
     async function checkVersion() {
       try {
         const response = await fetch("/api/version");
@@ -31,10 +36,18 @@ export default function VersionChecker() {
         if (initialBuildTime.current === null) {
           initialBuildTime.current = data.buildTime;
           console.log(`[VersionChecker] Initial build: ${data.buildTime}`);
+
+          // In dev mode, set up periodic refresh (page reloads, so this re-triggers)
+          if (data.buildTime === "development") {
+            console.log(`[VersionChecker] Dev mode - auto-refresh in ${DEV_REFRESH_INTERVAL / 1000}s`);
+            devRefreshTimeout = setTimeout(() => {
+              window.location.reload();
+            }, DEV_REFRESH_INTERVAL);
+          }
           return;
         }
 
-        // Subsequent checks - compare versions
+        // Subsequent checks - compare versions (production mode)
         if (data.buildTime !== initialBuildTime.current) {
           console.log(
             `[VersionChecker] New version detected: ${data.buildTime} (was: ${initialBuildTime.current})`
@@ -57,7 +70,10 @@ export default function VersionChecker() {
     // Set up polling interval
     const interval = setInterval(checkVersion, POLL_INTERVAL);
 
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(interval);
+      if (devRefreshTimeout) clearTimeout(devRefreshTimeout);
+    };
   }, []);
 
   return (
