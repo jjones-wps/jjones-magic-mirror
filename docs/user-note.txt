@@ -1,0 +1,4 @@
+This repo is for a 'magic mirror' project.
+A magic mirror is a popular homelab project where a computer monitor is affixed to a one-way mirror and displays convenient data to a user, like weather, news, etc.
+The display interface should allow the monitor to be physically invisible behind the mirror using a monochrome white text on black background display interface.
+The display will be run on a raspberry pi.
