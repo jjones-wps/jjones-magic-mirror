@@ -146,7 +146,7 @@ body {
 
 /* Widget container with standard padding */
 .widget {
-  padding: var(--space-4) var(--space-6);
+  padding: var(--space-3) var(--space-6);
 }
 
 /* ============================================
@@ -196,8 +196,8 @@ body {
   background: linear-gradient(
     90deg,
     transparent 0%,
-    rgba(255, 255, 255, 0.15) 20%,
-    rgba(255, 255, 255, 0.15) 80%,
+    rgba(255, 255, 255, 0.22) 20%,
+    rgba(255, 255, 255, 0.22) 80%,
     transparent 100%
   );
 }
@@ -210,8 +210,8 @@ body {
   background: linear-gradient(
     90deg,
     transparent 0%,
-    rgba(255, 255, 255, 0.15) 20%,
-    rgba(255, 255, 255, 0.15) 80%,
+    rgba(255, 255, 255, 0.22) 20%,
+    rgba(255, 255, 255, 0.22) 80%,
     transparent 100%
   );
 }
@@ -226,10 +226,10 @@ body {
   background: linear-gradient(
     90deg,
     transparent,
-    rgba(255, 255, 255, 0.3),
+    rgba(255, 255, 255, 0.4),
     transparent
   );
-  animation: shimmer 8s ease-in-out infinite;
+  animation: shimmer 5s ease-in-out infinite;
 }
 
 @keyframes shimmer {

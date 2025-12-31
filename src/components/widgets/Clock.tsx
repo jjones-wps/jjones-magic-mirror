@@ -30,7 +30,7 @@ function GeometricRings() {
     <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
       <svg
         viewBox="0 0 600 300"
-        className="w-full h-full opacity-[0.08]"
+        className="w-full h-full opacity-[0.15]"
         style={{ maxWidth: "800px" }}
       >
         {/* Outer ring */}
@@ -41,7 +41,7 @@ function GeometricRings() {
           ry="120"
           fill="none"
           stroke="white"
-          strokeWidth="0.5"
+          strokeWidth="0.75"
           initial={{ pathLength: 0, opacity: 0 }}
           animate={{ pathLength: 1, opacity: 1 }}
           transition={{ duration: 2, ease: "easeOut" }}
@@ -54,7 +54,7 @@ function GeometricRings() {
           ry="100"
           fill="none"
           stroke="white"
-          strokeWidth="0.3"
+          strokeWidth="0.5"
           initial={{ pathLength: 0, opacity: 0 }}
           animate={{ pathLength: 1, opacity: 1 }}
           transition={{ duration: 2, delay: 0.3, ease: "easeOut" }}
@@ -67,7 +67,7 @@ function GeometricRings() {
           ry="80"
           fill="none"
           stroke="white"
-          strokeWidth="0.2"
+          strokeWidth="0.3"
           initial={{ pathLength: 0, opacity: 0 }}
           animate={{ pathLength: 1, opacity: 1 }}
           transition={{ duration: 2, delay: 0.6, ease: "easeOut" }}
@@ -97,7 +97,7 @@ function TimeDigit({ digit, index }: TimeDigitProps) {
           animate="animate"
           exit="exit"
           transition={clockDigitTransition}
-          className="absolute inset-0 flex items-center justify-center text-mirror-5xl font-extralight tracking-tight font-display"
+          className="absolute inset-0 flex items-center justify-center text-mirror-5xl font-extralight tracking-tight font-display text-glow"
         >
           {digit}
         </motion.span>
@@ -114,7 +114,7 @@ function TimeSeparator() {
   return (
     <motion.span
       {...separatorPulse}
-      className="text-mirror-5xl font-extralight mx-2 font-display"
+      className="text-mirror-5xl font-extralight mx-2 font-display text-glow"
     >
       :
     </motion.span>
@@ -281,7 +281,7 @@ export default function Clock() {
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.5, duration: 0.6 }}
-        className="mt-6"
+        className="mt-4"
       >
         <span
           className="text-mirror-xl font-extralight tracking-wide font-body"

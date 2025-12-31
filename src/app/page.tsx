@@ -10,12 +10,12 @@ export default function MirrorPage() {
     <main className="mirror-container mx-auto bg-black flex flex-col">
 
       {/* Top Section - Clock */}
-      <section className="pt-16">
+      <section className="pt-12">
         <Clock />
       </section>
 
       {/* Divider with shimmer animation */}
-      <div className="divider-shimmer mx-12 my-8" />
+      <div className="divider-shimmer mx-12 my-5" />
 
       {/* AI Summary - Daily Briefing */}
       <section>
@@ -23,7 +23,7 @@ export default function MirrorPage() {
       </section>
 
       {/* Divider with shimmer animation */}
-      <div className="divider-shimmer mx-12 my-8" />
+      <div className="divider-shimmer mx-12 my-5" />
 
       {/* Spotify Now Playing (only shows when configured and playing) */}
       <section>
@@ -36,7 +36,7 @@ export default function MirrorPage() {
       </section>
 
       {/* Divider with shimmer animation */}
-      <div className="divider-shimmer mx-12 my-8" />
+      <div className="divider-shimmer mx-12 my-5" />
 
       {/* Calendar Section */}
       <section className="flex-1">
@@ -44,7 +44,7 @@ export default function MirrorPage() {
       </section>
 
       {/* Divider with shimmer animation */}
-      <div className="divider-shimmer mx-12 my-8" />
+      <div className="divider-shimmer mx-12 my-5" />
 
       {/* News Section */}
       <section>
@@ -52,7 +52,7 @@ export default function MirrorPage() {
       </section>
 
       {/* Bottom spacing */}
-      <div className="pb-16" />
+      <div className="pb-10" />
     </main>
   );
 }

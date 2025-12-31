@@ -61,16 +61,22 @@ function ForecastDay({ day, isToday }: ForecastDayProps) {
   return (
     <motion.div
       variants={staggerItem}
-      className="flex items-center justify-between py-3"
-      style={{ opacity: isToday ? opacity.primary : opacity.secondary }}
+      className={`flex items-center justify-between py-3 px-3 -mx-3 rounded ${
+        isToday ? "bg-white/[0.03]" : ""
+      }`}
+      style={{
+        opacity: isToday ? opacity.hero : opacity.secondary,
+      }}
     >
       {/* Day name */}
-      <span className="text-mirror-base font-light w-16 font-body">
+      <span className={`text-mirror-base w-16 font-body ${
+        isToday ? "font-normal" : "font-light"
+      }`}>
         {dayName}
       </span>
 
       {/* Weather icon */}
-      <div className="w-10 flex justify-center">
+      <div className={`w-10 flex justify-center ${isToday ? "scale-110" : ""}`}>
         <WeatherIcon weatherCode={day.weatherCode} size={28} />
       </div>
 
@@ -84,7 +90,9 @@ function ForecastDay({ day, isToday }: ForecastDayProps) {
 
       {/* High / Low temps */}
       <div className="flex items-baseline gap-3 w-24 justify-end">
-        <span className="text-mirror-base font-light font-body">
+        <span className={`text-mirror-base font-body ${
+          isToday ? "font-normal" : "font-light"
+        }`}>
           {day.tempHigh}°
         </span>
         <span
@@ -236,7 +244,7 @@ export default function Weather() {
       </motion.div>
 
       {/* 7-day forecast */}
-      <motion.div variants={staggerItem} className="mt-8">
+      <motion.div variants={staggerItem} className="mt-6">
         <div
           className="text-mirror-xs font-normal tracking-widest uppercase mb-4 font-body"
           style={{ opacity: opacity.tertiary }}
