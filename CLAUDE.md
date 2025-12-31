@@ -40,23 +40,35 @@ pm2 logs magic-mirror   # View server logs
 pm2 restart magic-mirror # Quick restart (no rebuild)
 ```
 
-### Deploying Changes
+### Deploying Changes (Push-to-Deploy)
 
-**From dev machine (recommended workflow):**
+Deployments are **fully automated** via GitHub Actions with a self-hosted runner on the Pi.
+
+**Just push to main:**
 ```bash
-# 1. Commit and push changes
 git add . && git commit -m "your changes" && git push
-
-# 2. Deploy to Pi
-ssh jjones@192.168.1.213 "/home/jjones/magic-mirror/deploy.sh"
 ```
 
-**What the deploy script does:**
+The deploy workflow automatically:
 1. 📥 Pulls latest from git (`git reset --hard origin/main`)
 2. 📦 Installs dependencies (`npm ci`)
 3. 🔨 Builds production (`npm run build`)
 4. ♻️ Restarts pm2 server
 5. ✅ Verifies health (HTTP 200 check)
+
+**Monitor deploys:**
+- GitHub Actions tab: https://github.com/jjones-wps/jjones-magic-mirror/actions
+- Manual trigger: Actions → "Deploy to Magic Mirror" → "Run workflow"
+- CLI: `gh run list --repo jjones-wps/jjones-magic-mirror`
+
+**Runner management (on Pi):**
+```bash
+cd ~/actions-runner
+sudo ./svc.sh status   # Check runner status
+sudo ./svc.sh stop     # Stop runner
+sudo ./svc.sh start    # Start runner
+journalctl -u actions.runner.* -f  # View runner logs
+```
 
 ### Local Development (Optional)
 
@@ -225,7 +237,11 @@ Target device is Raspberry Pi:
 
 ## Deployment
 
-See "Raspberry Pi Production Setup" section above for the current git-based deployment workflow.
+**CI/CD Pipeline:** Push-to-deploy via GitHub Actions self-hosted runner on Pi. See "Deploying Changes" section above.
+
+**Key files:**
+- `.github/workflows/deploy.yml` - GitHub Actions workflow
+- `deploy.sh` - Deploy script (runs on Pi)
 
 The `VersionChecker` component (`src/components/VersionChecker.tsx`) provides auto-refresh:
 - Polls `/api/version` every 30 seconds (production) or 60 seconds (dev)
@@ -236,13 +252,14 @@ The `VersionChecker` component (`src/components/VersionChecker.tsx`) provides au
 
 | File | Changes |
 |------|---------|
+| `.github/workflows/deploy.yml` | NEW - Push-to-deploy GitHub Actions workflow |
+| `deploy.sh` | NEW - Versioned deploy script with build timing |
 | `src/lib/commute.ts` | NEW - TomTom API utilities, types, demo data |
 | `src/app/api/commute/route.ts` | NEW - Commute API with TomTom routing integration |
 | `src/components/widgets/Commute.tsx` | NEW - Rotating commute widget (workday mornings only) |
 | `src/components/widgets/Clock.tsx` | Feast day with midnight refresh detection |
 | `src/app/api/summary/route.ts` | TypeScript strict mode fixes |
-| `deploy.sh` | NEW - Pi deployment script (on Pi only) |
-| `kiosk.sh` | Updated to use localhost:3000 |
+| `kiosk.sh` | Updated to use localhost:3000 (on Pi) |
 
 ## Dependencies Added
 
