@@ -6,6 +6,8 @@ set -e  # Exit on any error
 APP_DIR="/home/jjones/magic-mirror"
 cd "$APP_DIR"
 
+START_TIME=$(date +%s)
+
 echo "============================================"
 echo "Magic Mirror Deploy - $(date)"
 echo "============================================"
@@ -43,7 +45,10 @@ else
     exit 1
 fi
 
+END_TIME=$(date +%s)
+DURATION=$((END_TIME - START_TIME))
+
 echo ""
 echo "============================================"
-echo "🎉 Deploy complete!"
+echo "🎉 Deploy complete in ${DURATION}s!"
 echo "============================================"
