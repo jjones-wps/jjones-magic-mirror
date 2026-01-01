@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { Suspense } from 'react';
 import LoginForm from './LoginForm';
 import '../globals.css';

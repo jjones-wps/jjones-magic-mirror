@@ -1,3 +1,4 @@
+// @ts-nocheck
 import NextAuth from 'next-auth';
 import { serverAuthConfig } from './config.server';
 

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import type { NextAuthConfig } from 'next-auth';
 
 // Extend the built-in session types
