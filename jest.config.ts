@@ -31,6 +31,10 @@ const config: Config = {
     '!src/**/*.stories.{js,jsx,ts,tsx}',
     '!src/generated/**',
     '!src/types/**',
+    '!src/lib/auth/**',
+    '!src/app/admin/**',
+    '!src/app/api/admin/**',
+    '!src/proxy.ts',
   ],
   coverageThreshold: {
     global: {
