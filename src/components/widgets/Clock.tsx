@@ -1,15 +1,15 @@
-"use client";
+'use client';
 
-import { useState, useEffect, useMemo } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { format } from "date-fns";
+import { useState, useEffect, useMemo } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { format } from 'date-fns';
 import {
   clockDigitVariants,
   clockDigitTransition,
   separatorPulse,
   glowBreathing,
   opacity,
-} from "@/lib/tokens";
+} from '@/lib/tokens';
 
 // ============================================
 // FEAST DAY TYPE
@@ -31,7 +31,7 @@ function GeometricRings() {
       <svg
         viewBox="0 0 600 300"
         className="w-full h-full opacity-[0.15]"
-        style={{ maxWidth: "800px" }}
+        style={{ maxWidth: '800px' }}
       >
         {/* Outer ring */}
         <motion.ellipse
@@ -44,7 +44,7 @@ function GeometricRings() {
           strokeWidth="0.75"
           initial={{ pathLength: 0, opacity: 0 }}
           animate={{ pathLength: 1, opacity: 1 }}
-          transition={{ duration: 2, ease: "easeOut" }}
+          transition={{ duration: 2, ease: 'easeOut' }}
         />
         {/* Middle ring */}
         <motion.ellipse
@@ -57,7 +57,7 @@ function GeometricRings() {
           strokeWidth="0.5"
           initial={{ pathLength: 0, opacity: 0 }}
           animate={{ pathLength: 1, opacity: 1 }}
-          transition={{ duration: 2, delay: 0.3, ease: "easeOut" }}
+          transition={{ duration: 2, delay: 0.3, ease: 'easeOut' }}
         />
         {/* Inner ring */}
         <motion.ellipse
@@ -70,7 +70,7 @@ function GeometricRings() {
           strokeWidth="0.3"
           initial={{ pathLength: 0, opacity: 0 }}
           animate={{ pathLength: 1, opacity: 1 }}
-          transition={{ duration: 2, delay: 0.6, ease: "easeOut" }}
+          transition={{ duration: 2, delay: 0.6, ease: 'easeOut' }}
         />
       </svg>
     </div>
@@ -126,10 +126,10 @@ function TimeSeparator() {
 // Changes based on hour of day
 // ============================================
 function getGreeting(hour: number): string {
-  if (hour >= 5 && hour < 12) return "Good morning";
-  if (hour >= 12 && hour < 17) return "Good afternoon";
-  if (hour >= 17 && hour < 21) return "Good evening";
-  return "Good night";
+  if (hour >= 5 && hour < 12) return 'Good morning';
+  if (hour >= 12 && hour < 17) return 'Good afternoon';
+  if (hour >= 17 && hour < 21) return 'Good evening';
+  return 'Good night';
 }
 
 // ============================================
@@ -167,14 +167,14 @@ export default function Clock() {
   useEffect(() => {
     async function fetchFeastDay() {
       try {
-        const response = await fetch("/api/feast-day");
+        const response = await fetch('/api/feast-day');
         if (response.ok) {
           const data = await response.json();
           setFeastDay(data);
           setLastFetchDate(new Date().toDateString());
         }
       } catch (error) {
-        console.error("Failed to fetch feast day:", error);
+        console.error('Failed to fetch feast day:', error);
       }
     }
 
@@ -191,39 +191,38 @@ export default function Clock() {
     const currentDate = time.toDateString();
     if (currentDate !== lastFetchDate) {
       // Date changed, fetch new feast day
-      fetch("/api/feast-day")
+      fetch('/api/feast-day')
         .then((res) => res.json())
         .then((data) => {
           setFeastDay(data);
           setLastFetchDate(currentDate);
         })
-        .catch((err) => console.error("Failed to fetch feast day on date change:", err));
+        .catch((err) => console.error('Failed to fetch feast day on date change:', err));
     }
   }, [time, lastFetchDate]);
 
   // Memoize derived values
-  const { hours, minutes, period, dateStr, greeting, isSpecialTime } =
-    useMemo(() => {
-      if (!time) {
-        return {
-          hours: "",
-          minutes: "",
-          period: "",
-          dateStr: "",
-          greeting: "",
-          isSpecialTime: false,
-        };
-      }
-
+  const { hours, minutes, period, dateStr, greeting, isSpecialTime } = useMemo(() => {
+    if (!time) {
       return {
-        hours: format(time, "h"),
-        minutes: format(time, "mm"),
-        period: format(time, "a"),
-        dateStr: format(time, "EEEE, MMMM d"),
-        greeting: getGreeting(time.getHours()),
-        isSpecialTime: is1111(time),
+        hours: '',
+        minutes: '',
+        period: '',
+        dateStr: '',
+        greeting: '',
+        isSpecialTime: false,
       };
-    }, [time]);
+    }
+
+    return {
+      hours: format(time, 'h'),
+      minutes: format(time, 'mm'),
+      period: format(time, 'a'),
+      dateStr: format(time, 'EEEE, MMMM d'),
+      greeting: getGreeting(time.getHours()),
+      isSpecialTime: is1111(time),
+    };
+  }, [time]);
 
   // Don't render until we have client-side time (prevents hydration mismatch)
   if (!time) {
@@ -236,8 +235,8 @@ export default function Clock() {
   }
 
   // Pad hours for consistent width
-  const hourDigits = hours.padStart(2, " ").split("");
-  const minuteDigits = minutes.split("");
+  const hourDigits = hours.padStart(2, ' ').split('');
+  const minuteDigits = minutes.split('');
 
   return (
     <div className="widget flex flex-col items-center relative">
@@ -247,7 +246,7 @@ export default function Clock() {
       {/* Time display */}
       <motion.div
         className={`flex items-center justify-center relative z-10 ${
-          isSpecialTime ? "text-glow-strong" : ""
+          isSpecialTime ? 'text-glow-strong' : ''
         }`}
         {...(isSpecialTime ? glowBreathing : {})}
       >

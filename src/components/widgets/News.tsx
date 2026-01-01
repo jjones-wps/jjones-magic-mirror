@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { format } from "date-fns";
-import { getDemoNewsData, formatTimeAgo, type NewsData, type NewsArticle } from "@/lib/news";
-import { opacity, staggerContainer, staggerItem } from "@/lib/tokens";
+import { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { format } from 'date-fns';
+import { getDemoNewsData, formatTimeAgo, type NewsData, type NewsArticle } from '@/lib/news';
+import { opacity, staggerContainer, staggerItem } from '@/lib/tokens';
 
 // ============================================
 // CONFIGURATION
@@ -92,19 +92,19 @@ export default function News() {
   useEffect(() => {
     async function loadNews() {
       try {
-        const response = await fetch("/api/news");
+        const response = await fetch('/api/news');
 
         if (response.ok) {
           const data: NewsAPIResponse = await response.json();
           setNews(parseAPIResponse(data));
           setIsDemo(false);
         } else {
-          console.warn("News API failed, using demo data");
+          console.warn('News API failed, using demo data');
           setNews(getDemoNewsData());
           setIsDemo(true);
         }
       } catch (error) {
-        console.error("News fetch error:", error);
+        console.error('News fetch error:', error);
         setNews(getDemoNewsData());
         setIsDemo(true);
       } finally {
@@ -125,9 +125,7 @@ export default function News() {
     return (
       <div className="widget">
         <div className="label">Headlines</div>
-        <div className="mt-6 text-mirror-base font-extralight opacity-disabled">
-          Loading...
-        </div>
+        <div className="mt-6 text-mirror-base font-extralight opacity-disabled">Loading...</div>
       </div>
     );
   }
@@ -145,12 +143,7 @@ export default function News() {
   }
 
   return (
-    <motion.div
-      className="widget"
-      initial="initial"
-      animate="animate"
-      variants={staggerContainer}
-    >
+    <motion.div className="widget" initial="initial" animate="animate" variants={staggerContainer}>
       {/* Header */}
       <div className="flex items-baseline justify-between">
         <span className="label">Headlines</span>
@@ -159,7 +152,7 @@ export default function News() {
           className="text-mirror-sm font-extralight font-body"
           style={{ opacity: opacity.tertiary }}
         >
-          {isDemo ? "Demo" : format(news.lastUpdated, "h:mm a")}
+          {isDemo ? 'Demo' : format(news.lastUpdated, 'h:mm a')}
         </motion.span>
       </div>
 
@@ -179,8 +172,8 @@ export default function News() {
           style={{ opacity: opacity.disabled }}
         >
           {isDemo
-            ? "Demo headlines"
-            : `Sources: ${[...new Set(news.articles.map((a) => a.source))].join(", ")}`}
+            ? 'Demo headlines'
+            : `Sources: ${[...new Set(news.articles.map((a) => a.source))].join(', ')}`}
         </span>
       </motion.div>
     </motion.div>

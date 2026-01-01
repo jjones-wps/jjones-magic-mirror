@@ -1,23 +1,18 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { format } from "date-fns";
-import {
-  fetchWeather,
-  getWeatherShort,
-  type WeatherData,
-  type DailyForecast,
-} from "@/lib/weather";
-import { opacity, staggerContainer, staggerItem, fadeInUp } from "@/lib/tokens";
-import { WeatherIcon } from "./WeatherIcons";
+import { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { format } from 'date-fns';
+import { fetchWeather, getWeatherShort, type WeatherData, type DailyForecast } from '@/lib/weather';
+import { opacity, staggerContainer, staggerItem, fadeInUp } from '@/lib/tokens';
+import { WeatherIcon } from './WeatherIcons';
 
 // ============================================
 // CONFIGURATION
 // ============================================
 const WEATHER_LAT = 41.0793;
 const WEATHER_LON = -85.1394;
-const WEATHER_LOCATION = "Fort Wayne, IN";
+const WEATHER_LOCATION = 'Fort Wayne, IN';
 const REFRESH_INTERVAL = 15 * 60 * 1000; // 15 minutes
 
 // ============================================
@@ -30,7 +25,7 @@ interface AnimatedNumberProps {
   className?: string;
 }
 
-function AnimatedNumber({ value, suffix = "", className = "" }: AnimatedNumberProps) {
+function AnimatedNumber({ value, suffix = '', className = '' }: AnimatedNumberProps) {
   return (
     <AnimatePresence mode="popLayout">
       <motion.span
@@ -38,10 +33,11 @@ function AnimatedNumber({ value, suffix = "", className = "" }: AnimatedNumberPr
         initial={{ y: 20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         exit={{ y: -20, opacity: 0 }}
-        transition={{ type: "spring", stiffness: 300, damping: 30 }}
+        transition={{ type: 'spring', stiffness: 300, damping: 30 }}
         className={className}
       >
-        {value}{suffix}
+        {value}
+        {suffix}
       </motion.span>
     </AnimatePresence>
   );
@@ -56,43 +52,41 @@ interface ForecastDayProps {
 }
 
 function ForecastDay({ day, isToday }: ForecastDayProps) {
-  const dayName = isToday ? "Today" : format(day.date, "EEE");
+  const dayName = isToday ? 'Today' : format(day.date, 'EEE');
 
   return (
     <motion.div
       variants={staggerItem}
       className={`flex items-center justify-between py-3 px-3 -mx-3 rounded ${
-        isToday ? "bg-white/[0.03]" : ""
+        isToday ? 'bg-white/[0.03]' : ''
       }`}
       style={{
         opacity: isToday ? opacity.hero : opacity.secondary,
       }}
     >
       {/* Day name */}
-      <span className={`text-mirror-base w-16 font-body ${
-        isToday ? "font-normal" : "font-light"
-      }`}>
+      <span className={`text-mirror-base w-16 font-body ${isToday ? 'font-normal' : 'font-light'}`}>
         {dayName}
       </span>
 
       {/* Weather icon */}
-      <div className={`w-10 flex justify-center ${isToday ? "scale-110" : ""}`}>
+      <div className={`w-10 flex justify-center ${isToday ? 'scale-110' : ''}`}>
         <WeatherIcon weatherCode={day.weatherCode} size={28} />
       </div>
 
       {/* Precipitation probability */}
       <span
         className="text-mirror-sm font-extralight w-12 text-center font-body"
-        style={{ opacity: day.precipitationProbability > 20 ? opacity.secondary : opacity.disabled }}
+        style={{
+          opacity: day.precipitationProbability > 20 ? opacity.secondary : opacity.disabled,
+        }}
       >
-        {day.precipitationProbability > 0 ? `${day.precipitationProbability}%` : ""}
+        {day.precipitationProbability > 0 ? `${day.precipitationProbability}%` : ''}
       </span>
 
       {/* High / Low temps */}
       <div className="flex items-baseline gap-3 w-24 justify-end">
-        <span className={`text-mirror-base font-body ${
-          isToday ? "font-normal" : "font-light"
-        }`}>
+        <span className={`text-mirror-base font-body ${isToday ? 'font-normal' : 'font-light'}`}>
           {day.tempHigh}°
         </span>
         <span
@@ -117,16 +111,12 @@ export default function Weather() {
   useEffect(() => {
     async function loadWeather() {
       try {
-        const data = await fetchWeather(
-          WEATHER_LAT,
-          WEATHER_LON,
-          WEATHER_LOCATION
-        );
+        const data = await fetchWeather(WEATHER_LAT, WEATHER_LON, WEATHER_LOCATION);
         setWeather(data);
         setError(null);
       } catch (err) {
-        setError("Unable to load weather");
-        console.error("Weather fetch error:", err);
+        setError('Unable to load weather');
+        console.error('Weather fetch error:', err);
       } finally {
         setLoading(false);
       }
@@ -146,9 +136,7 @@ export default function Weather() {
     return (
       <div className="widget">
         <div className="label">Weather</div>
-        <div className="mt-6 text-mirror-base font-extralight opacity-disabled">
-          Loading...
-        </div>
+        <div className="mt-6 text-mirror-base font-extralight opacity-disabled">Loading...</div>
       </div>
     );
   }
@@ -159,7 +147,7 @@ export default function Weather() {
       <div className="widget">
         <div className="label">Weather</div>
         <div className="mt-6 text-mirror-base font-extralight opacity-disabled">
-          {error || "Weather unavailable"}
+          {error || 'Weather unavailable'}
         </div>
       </div>
     );
@@ -169,12 +157,7 @@ export default function Weather() {
   const today = new Date();
 
   return (
-    <motion.div
-      className="widget"
-      initial="initial"
-      animate="animate"
-      variants={staggerContainer}
-    >
+    <motion.div className="widget" initial="initial" animate="animate" variants={staggerContainer}>
       {/* Header row: Label + Location */}
       <div className="flex items-baseline justify-between">
         <span className="label">Weather</span>
@@ -223,10 +206,7 @@ export default function Weather() {
             {condition}
           </motion.span>
 
-          <motion.div
-            variants={staggerItem}
-            className="mt-2 flex items-center gap-4"
-          >
+          <motion.div variants={staggerItem} className="mt-2 flex items-center gap-4">
             <span
               className="text-mirror-sm font-extralight font-body"
               style={{ opacity: opacity.tertiary }}
@@ -254,15 +234,8 @@ export default function Weather() {
 
         <motion.div variants={staggerContainer} initial="initial" animate="animate">
           {weather.daily.slice(0, 7).map((day) => {
-            const isToday =
-              format(day.date, "yyyy-MM-dd") === format(today, "yyyy-MM-dd");
-            return (
-              <ForecastDay
-                key={day.date.toISOString()}
-                day={day}
-                isToday={isToday}
-              />
-            );
+            const isToday = format(day.date, 'yyyy-MM-dd') === format(today, 'yyyy-MM-dd');
+            return <ForecastDay key={day.date.toISOString()} day={day} isToday={isToday} />;
           })}
         </motion.div>
       </motion.div>
@@ -273,7 +246,7 @@ export default function Weather() {
           className="text-mirror-xs font-extralight font-body"
           style={{ opacity: opacity.disabled }}
         >
-          Updated {format(weather.lastUpdated, "h:mm a")}
+          Updated {format(weather.lastUpdated, 'h:mm a')}
         </span>
       </motion.div>
     </motion.div>

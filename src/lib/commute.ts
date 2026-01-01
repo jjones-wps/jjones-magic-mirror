@@ -7,7 +7,7 @@
 // TYPES
 // ============================================
 
-export type TrafficStatus = "light" | "moderate" | "heavy";
+export type TrafficStatus = 'light' | 'moderate' | 'heavy';
 
 export interface CommuteConfig {
   name: string;
@@ -62,28 +62,22 @@ export interface TomTomRouteResponse {
 /**
  * Determine traffic status based on delay percentage
  */
-export function getTrafficStatus(
-  delayMinutes: number,
-  totalMinutes: number
-): TrafficStatus {
-  if (totalMinutes <= 0) return "light";
+export function getTrafficStatus(delayMinutes: number, totalMinutes: number): TrafficStatus {
+  if (totalMinutes <= 0) return 'light';
 
   const delayPercentage = (delayMinutes / totalMinutes) * 100;
 
-  if (delayPercentage < 10) return "light";
-  if (delayPercentage < 25) return "moderate";
-  return "heavy";
+  if (delayPercentage < 10) return 'light';
+  if (delayPercentage < 25) return 'moderate';
+  return 'heavy';
 }
 
 /**
  * Calculate suggested departure time based on target arrival and duration
  */
-export function calculateDepartureTime(
-  targetArrivalTime: string,
-  durationMinutes: number
-): Date {
+export function calculateDepartureTime(targetArrivalTime: string, durationMinutes: number): Date {
   const now = new Date();
-  const [hours, minutes] = targetArrivalTime.split(":").map(Number);
+  const [hours, minutes] = targetArrivalTime.split(':').map(Number);
 
   // Create target arrival date for today
   const targetArrival = new Date(now);
@@ -156,9 +150,9 @@ export function isWorkdayMorning(alwaysShow: boolean = false): boolean {
  */
 export function getTrafficLabel(status: TrafficStatus): string {
   const labels: Record<TrafficStatus, string> = {
-    light: "Light traffic",
-    moderate: "Moderate traffic",
-    heavy: "Heavy traffic",
+    light: 'Light traffic',
+    moderate: 'Moderate traffic',
+    heavy: 'Heavy traffic',
   };
   return labels[status];
 }
@@ -176,32 +170,36 @@ export function getDemoCommuteData(): CommuteAPIResponse {
   return {
     commutes: [
       {
-        name: "Jack",
+        name: 'Jack',
         durationMinutes: 24,
         distanceMiles: 12.3,
         trafficDelayMinutes: 3,
-        trafficStatus: "light",
+        trafficStatus: 'light',
         suggestedDepartureTime: new Date(
           now.getFullYear(),
           now.getMonth(),
           now.getDate(),
-          8, 6, 0
+          8,
+          6,
+          0
         ).toISOString(),
-        targetArrivalTime: "08:30",
+        targetArrivalTime: '08:30',
       },
       {
-        name: "Lauren",
+        name: 'Lauren',
         durationMinutes: 18,
         distanceMiles: 8.7,
         trafficDelayMinutes: 5,
-        trafficStatus: "moderate",
+        trafficStatus: 'moderate',
         suggestedDepartureTime: new Date(
           now.getFullYear(),
           now.getMonth(),
           now.getDate(),
-          7, 42, 0
+          7,
+          42,
+          0
         ).toISOString(),
-        targetArrivalTime: "08:00",
+        targetArrivalTime: '08:00',
       },
     ],
     lastUpdated: now.toISOString(),
@@ -216,21 +214,17 @@ export function getDemoCommuteData(): CommuteAPIResponse {
 /**
  * Build TomTom API URL for route calculation
  */
-export function buildTomTomUrl(
-  origin: string,
-  destination: string,
-  apiKey: string
-): string {
+export function buildTomTomUrl(origin: string, destination: string, apiKey: string): string {
   // Encode locations for URL
   const encodedOrigin = encodeURIComponent(origin);
   const encodedDest = encodeURIComponent(destination);
 
-  const baseUrl = "https://api.tomtom.com/routing/1/calculateRoute";
+  const baseUrl = 'https://api.tomtom.com/routing/1/calculateRoute';
   const params = new URLSearchParams({
     key: apiKey,
-    traffic: "true",
-    travelMode: "car",
-    routeType: "fastest",
+    traffic: 'true',
+    travelMode: 'car',
+    routeType: 'fastest',
   });
 
   return `${baseUrl}/${encodedOrigin}:${encodedDest}/json?${params}`;
@@ -254,10 +248,7 @@ export function parseTomTomResponse(
   const distanceMiles = metersToMiles(summary.lengthInMeters);
   const trafficDelayMinutes = summary.trafficDelayInSeconds / 60;
   const trafficStatus = getTrafficStatus(trafficDelayMinutes, durationMinutes);
-  const suggestedDepartureTime = calculateDepartureTime(
-    targetArrivalTime,
-    durationMinutes
-  );
+  const suggestedDepartureTime = calculateDepartureTime(targetArrivalTime, durationMinutes);
 
   return {
     name,

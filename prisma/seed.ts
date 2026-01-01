@@ -6,9 +6,7 @@ import 'dotenv/config';
 // Create Prisma Client with driver adapter
 const dbUrl = process.env.DATABASE_URL || 'file:./prisma/dev.db';
 const dbPath = dbUrl.replace('file:', '');
-const absolutePath = path.isAbsolute(dbPath)
-  ? dbPath
-  : path.resolve(process.cwd(), dbPath);
+const absolutePath = path.isAbsolute(dbPath) ? dbPath : path.resolve(process.cwd(), dbPath);
 
 const adapter = new PrismaBetterSqlite3({ url: absolutePath });
 const prisma = new PrismaClient({ adapter });

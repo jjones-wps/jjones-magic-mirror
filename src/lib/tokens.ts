@@ -15,9 +15,9 @@ export const easings = {
 
 // Spring configs for Framer Motion
 export const springs = {
-  gentle: { type: "spring", stiffness: 120, damping: 20 },
-  snappy: { type: "spring", stiffness: 300, damping: 30 },
-  bouncy: { type: "spring", stiffness: 400, damping: 25 },
+  gentle: { type: 'spring', stiffness: 120, damping: 20 },
+  snappy: { type: 'spring', stiffness: 300, damping: 30 },
+  bouncy: { type: 'spring', stiffness: 400, damping: 25 },
 } as const;
 
 // ============================================
@@ -62,11 +62,11 @@ export const spacing = {
 // TYPOGRAPHY
 // ============================================
 export const fontSize = {
-  "6xl": 180,
-  "5xl": 128,
-  "4xl": 96,
-  "3xl": 64,
-  "2xl": 48,
+  '6xl': 180,
+  '5xl': 128,
+  '4xl': 96,
+  '3xl': 64,
+  '2xl': 48,
   xl: 36,
   lg: 28,
   base: 21,
@@ -118,7 +118,7 @@ export const clockDigitVariants = {
 };
 
 export const clockDigitTransition = {
-  type: "spring" as const,
+  type: 'spring' as const,
   stiffness: 300,
   damping: 30,
 };
@@ -157,7 +157,7 @@ export const breathingAnimation = {
     opacity: [1, 0.7, 1],
     transition: {
       duration: 3,
-      ease: "easeInOut" as const,
+      ease: 'easeInOut' as const,
       repeat: Infinity,
     },
   },
@@ -169,13 +169,13 @@ export const breathingAnimation = {
 export const glowBreathing = {
   animate: {
     textShadow: [
-      "0 0 20px rgba(255, 255, 255, 0.1)",
-      "0 0 40px rgba(255, 255, 255, 0.2)",
-      "0 0 20px rgba(255, 255, 255, 0.1)",
+      '0 0 20px rgba(255, 255, 255, 0.1)',
+      '0 0 40px rgba(255, 255, 255, 0.2)',
+      '0 0 20px rgba(255, 255, 255, 0.1)',
     ],
     transition: {
       duration: 4,
-      ease: "easeInOut" as const,
+      ease: 'easeInOut' as const,
       repeat: Infinity,
     },
   },
@@ -189,7 +189,7 @@ export const separatorPulse = {
     opacity: [1, 0.2, 1],
     transition: {
       duration: 2,
-      ease: "easeInOut" as const,
+      ease: 'easeInOut' as const,
       repeat: Infinity,
     },
   },
@@ -220,8 +220,8 @@ export function getStaggerDelay(index: number, baseDelay = 0.1): number {
  * Create transition with custom duration
  */
 export function createTransition(
-  duration: keyof typeof durations = "normal",
-  ease: keyof typeof easings = "out"
+  duration: keyof typeof durations = 'normal',
+  ease: keyof typeof easings = 'out'
 ) {
   return {
     duration: durations[duration],

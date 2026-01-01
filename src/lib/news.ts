@@ -25,10 +25,7 @@ export interface NewsData {
 // RSS PARSING
 // ============================================
 
-async function parseRSSFeed(
-  url: string,
-  source: string
-): Promise<NewsArticle[]> {
+async function parseRSSFeed(url: string, source: string): Promise<NewsArticle[]> {
   try {
     const response = await fetch(url);
     const text = await response.text();
@@ -47,13 +44,13 @@ async function parseRSSFeed(
       if (title) {
         // Clean CDATA and HTML entities
         const cleanTitle = title
-          .replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, "$1")
-          .replace(/&amp;/g, "&")
-          .replace(/&lt;/g, "<")
-          .replace(/&gt;/g, ">")
+          .replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, '$1')
+          .replace(/&amp;/g, '&')
+          .replace(/&lt;/g, '<')
+          .replace(/&gt;/g, '>')
           .replace(/&quot;/g, '"')
           .replace(/&#39;/g, "'")
-          .replace(/<[^>]+>/g, "")
+          .replace(/<[^>]+>/g, '')
           .trim();
 
         if (cleanTitle) {
@@ -61,11 +58,11 @@ async function parseRSSFeed(
             id: guid || link || `${source}-${items.length}`,
             title: cleanTitle,
             source,
-            link: link?.replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, "$1").trim() || "",
+            link: link?.replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, '$1').trim() || '',
             pubDate: pubDate ? new Date(pubDate) : new Date(),
             description: description
-              ?.replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, "$1")
-              .replace(/<[^>]+>/g, "")
+              ?.replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, '$1')
+              .replace(/<[^>]+>/g, '')
               .trim(),
           });
         }
@@ -85,8 +82,8 @@ async function parseRSSFeed(
 
 const NEWS_FEEDS = [
   {
-    url: "https://news.google.com/rss?hl=en-US&gl=US&ceid=US:en",
-    source: "Google News",
+    url: 'https://news.google.com/rss?hl=en-US&gl=US&ceid=US:en',
+    source: 'Google News',
   },
   // Alternative feeds (uncomment as needed):
   // { url: "https://rss.nytimes.com/services/xml/rss/nyt/HomePage.xml", source: "NY Times" },
@@ -102,9 +99,7 @@ export async function fetchNews(): Promise<NewsData> {
   const allArticles: NewsArticle[] = [];
 
   // Fetch all feeds in parallel
-  const results = await Promise.all(
-    NEWS_FEEDS.map((feed) => parseRSSFeed(feed.url, feed.source))
-  );
+  const results = await Promise.all(NEWS_FEEDS.map((feed) => parseRSSFeed(feed.url, feed.source)));
 
   // Merge and deduplicate
   for (const articles of results) {
@@ -130,38 +125,38 @@ export function getDemoNewsData(): NewsData {
   return {
     articles: [
       {
-        id: "1",
-        title: "Scientists Discover New Method for Carbon Capture",
-        source: "Science Daily",
-        link: "#",
+        id: '1',
+        title: 'Scientists Discover New Method for Carbon Capture',
+        source: 'Science Daily',
+        link: '#',
         pubDate: new Date(Date.now() - 30 * 60 * 1000),
       },
       {
-        id: "2",
-        title: "Tech Giants Report Strong Quarterly Earnings",
-        source: "Bloomberg",
-        link: "#",
+        id: '2',
+        title: 'Tech Giants Report Strong Quarterly Earnings',
+        source: 'Bloomberg',
+        link: '#',
         pubDate: new Date(Date.now() - 60 * 60 * 1000),
       },
       {
-        id: "3",
-        title: "Local Community Celebrates Annual Winter Festival",
-        source: "Fort Wayne Journal",
-        link: "#",
+        id: '3',
+        title: 'Local Community Celebrates Annual Winter Festival',
+        source: 'Fort Wayne Journal',
+        link: '#',
         pubDate: new Date(Date.now() - 2 * 60 * 60 * 1000),
       },
       {
-        id: "4",
-        title: "New Study Reveals Benefits of Morning Exercise",
-        source: "Health Today",
-        link: "#",
+        id: '4',
+        title: 'New Study Reveals Benefits of Morning Exercise',
+        source: 'Health Today',
+        link: '#',
         pubDate: new Date(Date.now() - 3 * 60 * 60 * 1000),
       },
       {
-        id: "5",
-        title: "Space Agency Announces Mars Mission Timeline",
-        source: "NASA News",
-        link: "#",
+        id: '5',
+        title: 'Space Agency Announces Mars Mission Timeline',
+        source: 'NASA News',
+        link: '#',
         pubDate: new Date(Date.now() - 4 * 60 * 60 * 1000),
       },
     ],
@@ -183,7 +178,7 @@ export function formatTimeAgo(date: Date): string {
   const diffHours = Math.floor(diffMins / 60);
   const diffDays = Math.floor(diffHours / 24);
 
-  if (diffMins < 1) return "Just now";
+  if (diffMins < 1) return 'Just now';
   if (diffMins < 60) return `${diffMins}m ago`;
   if (diffHours < 24) return `${diffHours}h ago`;
   if (diffDays < 7) return `${diffDays}d ago`;

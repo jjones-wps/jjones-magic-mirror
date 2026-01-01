@@ -1,1 +1,1 @@
-declare module "romcal";
+declare module 'romcal';

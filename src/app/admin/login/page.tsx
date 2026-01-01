@@ -16,9 +16,7 @@ export default function LoginPage() {
     >
       <Suspense
         fallback={
-          <div style={{ textAlign: 'center', color: 'var(--admin-text-muted)' }}>
-            Loading...
-          </div>
+          <div style={{ textAlign: 'center', color: 'var(--admin-text-muted)' }}>Loading...</div>
         }
       >
         <LoginForm />

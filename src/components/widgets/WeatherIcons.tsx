@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { motion } from "framer-motion";
+import { motion } from 'framer-motion';
 
 interface WeatherIconProps {
   size?: number;
@@ -10,15 +10,9 @@ interface WeatherIconProps {
 // ============================================
 // SUN ICON - Rotating rays
 // ============================================
-export function SunIcon({ size = 64, className = "" }: WeatherIconProps) {
+export function SunIcon({ size = 64, className = '' }: WeatherIconProps) {
   return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 64 64"
-      className={className}
-      fill="none"
-    >
+    <svg width={size} height={size} viewBox="0 0 64 64" className={className} fill="none">
       {/* Center circle */}
       <motion.circle
         cx="32"
@@ -35,8 +29,8 @@ export function SunIcon({ size = 64, className = "" }: WeatherIconProps) {
       {/* Rotating rays */}
       <motion.g
         animate={{ rotate: 360 }}
-        transition={{ duration: 30, repeat: Infinity, ease: "linear" }}
-        style={{ transformOrigin: "32px 32px" }}
+        transition={{ duration: 30, repeat: Infinity, ease: 'linear' }}
+        style={{ transformOrigin: '32px 32px' }}
       >
         {[0, 45, 90, 135, 180, 225, 270, 315].map((angle) => (
           <motion.line
@@ -48,7 +42,7 @@ export function SunIcon({ size = 64, className = "" }: WeatherIconProps) {
             stroke="currentColor"
             strokeWidth="2"
             strokeLinecap="round"
-            style={{ transformOrigin: "32px 32px", rotate: angle }}
+            style={{ transformOrigin: '32px 32px', rotate: angle }}
             initial={{ opacity: 0 }}
             animate={{ opacity: [0.4, 1, 0.4] }}
             transition={{
@@ -66,15 +60,9 @@ export function SunIcon({ size = 64, className = "" }: WeatherIconProps) {
 // ============================================
 // CLOUD ICON - Drifting motion
 // ============================================
-export function CloudIcon({ size = 64, className = "" }: WeatherIconProps) {
+export function CloudIcon({ size = 64, className = '' }: WeatherIconProps) {
   return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 64 64"
-      className={className}
-      fill="none"
-    >
+    <svg width={size} height={size} viewBox="0 0 64 64" className={className} fill="none">
       <motion.path
         d="M48 36c4.4 0 8-3.6 8-8s-3.6-8-8-8c-.4 0-.8 0-1.2.1C45.6 14.4 40.2 10 34 10c-7.2 0-13.1 5.4-13.9 12.4C14.4 23.2 10 28.2 10 34c0 6.6 5.4 12 12 12h26"
         stroke="currentColor"
@@ -84,7 +72,7 @@ export function CloudIcon({ size = 64, className = "" }: WeatherIconProps) {
         initial={{ x: -5, opacity: 0 }}
         animate={{ x: [0, 3, 0], opacity: 1 }}
         transition={{
-          x: { duration: 4, repeat: Infinity, ease: "easeInOut" },
+          x: { duration: 4, repeat: Infinity, ease: 'easeInOut' },
           opacity: { duration: 0.5 },
         }}
       />
@@ -95,15 +83,9 @@ export function CloudIcon({ size = 64, className = "" }: WeatherIconProps) {
 // ============================================
 // PARTLY CLOUDY - Sun with drifting cloud
 // ============================================
-export function PartlyCloudyIcon({ size = 64, className = "" }: WeatherIconProps) {
+export function PartlyCloudyIcon({ size = 64, className = '' }: WeatherIconProps) {
   return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 64 64"
-      className={className}
-      fill="none"
-    >
+    <svg width={size} height={size} viewBox="0 0 64 64" className={className} fill="none">
       {/* Sun behind */}
       <motion.circle
         cx="24"
@@ -126,7 +108,7 @@ export function PartlyCloudyIcon({ size = 64, className = "" }: WeatherIconProps
         fill="none"
         initial={{ x: -3 }}
         animate={{ x: [0, 2, 0] }}
-        transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
+        transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
       />
     </svg>
   );
@@ -135,15 +117,9 @@ export function PartlyCloudyIcon({ size = 64, className = "" }: WeatherIconProps
 // ============================================
 // RAIN ICON - Falling drops
 // ============================================
-export function RainIcon({ size = 64, className = "" }: WeatherIconProps) {
+export function RainIcon({ size = 64, className = '' }: WeatherIconProps) {
   return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 64 64"
-      className={className}
-      fill="none"
-    >
+    <svg width={size} height={size} viewBox="0 0 64 64" className={className} fill="none">
       {/* Cloud */}
       <motion.path
         d="M48 28c3.3 0 6-2.7 6-6s-2.7-6-6-6c-.3 0-.6 0-.9.1C46.2 11.8 42.2 8 37 8c-5.4 0-9.8 4-10.4 9.3C22.8 18 20 21.6 20 26c0 5 4 9 9 9h19"
@@ -176,7 +152,7 @@ export function RainIcon({ size = 64, className = "" }: WeatherIconProps) {
             duration: 1,
             repeat: Infinity,
             delay: drop.delay,
-            ease: "easeIn",
+            ease: 'easeIn',
           }}
         />
       ))}
@@ -187,15 +163,9 @@ export function RainIcon({ size = 64, className = "" }: WeatherIconProps) {
 // ============================================
 // SNOW ICON - Falling snowflakes
 // ============================================
-export function SnowIcon({ size = 64, className = "" }: WeatherIconProps) {
+export function SnowIcon({ size = 64, className = '' }: WeatherIconProps) {
   return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 64 64"
-      className={className}
-      fill="none"
-    >
+    <svg width={size} height={size} viewBox="0 0 64 64" className={className} fill="none">
       {/* Cloud */}
       <motion.path
         d="M48 28c3.3 0 6-2.7 6-6s-2.7-6-6-6c-.3 0-.6 0-.9.1C46.2 11.8 42.2 8 37 8c-5.4 0-9.8 4-10.4 9.3C22.8 18 20 21.6 20 26c0 5 4 9 9 9h19"
@@ -225,17 +195,10 @@ export function SnowIcon({ size = 64, className = "" }: WeatherIconProps) {
             duration: 2,
             repeat: Infinity,
             delay: flake.delay,
-            ease: "linear",
+            ease: 'linear',
           }}
         >
-          <circle
-            cx={flake.x}
-            cy="42"
-            r="2"
-            stroke="currentColor"
-            strokeWidth="1.5"
-            fill="none"
-          />
+          <circle cx={flake.x} cy="42" r="2" stroke="currentColor" strokeWidth="1.5" fill="none" />
         </motion.g>
       ))}
     </svg>
@@ -245,15 +208,9 @@ export function SnowIcon({ size = 64, className = "" }: WeatherIconProps) {
 // ============================================
 // THUNDERSTORM ICON - Cloud with lightning
 // ============================================
-export function ThunderstormIcon({ size = 64, className = "" }: WeatherIconProps) {
+export function ThunderstormIcon({ size = 64, className = '' }: WeatherIconProps) {
   return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 64 64"
-      className={className}
-      fill="none"
-    >
+    <svg width={size} height={size} viewBox="0 0 64 64" className={className} fill="none">
       {/* Cloud */}
       <path
         d="M48 28c3.3 0 6-2.7 6-6s-2.7-6-6-6c-.3 0-.6 0-.9.1C46.2 11.8 42.2 8 37 8c-5.4 0-9.8 4-10.4 9.3C22.8 18 20 21.6 20 26c0 5 4 9 9 9h19"
@@ -285,15 +242,9 @@ export function ThunderstormIcon({ size = 64, className = "" }: WeatherIconProps
 // ============================================
 // FOG ICON - Drifting layers
 // ============================================
-export function FogIcon({ size = 64, className = "" }: WeatherIconProps) {
+export function FogIcon({ size = 64, className = '' }: WeatherIconProps) {
   return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 64 64"
-      className={className}
-      fill="none"
-    >
+    <svg width={size} height={size} viewBox="0 0 64 64" className={className} fill="none">
       {[20, 30, 40, 50].map((y, i) => (
         <motion.line
           key={i}
@@ -310,7 +261,7 @@ export function FogIcon({ size = 64, className = "" }: WeatherIconProps) {
             duration: 4,
             repeat: Infinity,
             delay: i * 0.3,
-            ease: "easeInOut",
+            ease: 'easeInOut',
           }}
           style={{ opacity: 0.3 + i * 0.15 }}
         />
@@ -322,15 +273,9 @@ export function FogIcon({ size = 64, className = "" }: WeatherIconProps) {
 // ============================================
 // DRIZZLE ICON - Light rain
 // ============================================
-export function DrizzleIcon({ size = 64, className = "" }: WeatherIconProps) {
+export function DrizzleIcon({ size = 64, className = '' }: WeatherIconProps) {
   return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 64 64"
-      className={className}
-      fill="none"
-    >
+    <svg width={size} height={size} viewBox="0 0 64 64" className={className} fill="none">
       {/* Cloud */}
       <motion.path
         d="M48 28c3.3 0 6-2.7 6-6s-2.7-6-6-6c-.3 0-.6 0-.9.1C46.2 11.8 42.2 8 37 8c-5.4 0-9.8 4-10.4 9.3C22.8 18 20 21.6 20 26c0 5 4 9 9 9h19"
@@ -358,7 +303,7 @@ export function DrizzleIcon({ size = 64, className = "" }: WeatherIconProps) {
             duration: 1.5,
             repeat: Infinity,
             delay: drop.delay,
-            ease: "easeIn",
+            ease: 'easeIn',
           }}
         />
       ))}
@@ -373,7 +318,7 @@ interface WeatherIconSelectorProps extends WeatherIconProps {
   weatherCode: number;
 }
 
-export function WeatherIcon({ weatherCode, size = 64, className = "" }: WeatherIconSelectorProps) {
+export function WeatherIcon({ weatherCode, size = 64, className = '' }: WeatherIconSelectorProps) {
   // WMO Weather interpretation codes
   // https://open-meteo.com/en/docs
 

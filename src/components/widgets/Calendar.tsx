@@ -1,15 +1,15 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { format, isAfter } from "date-fns";
+import { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { format, isAfter } from 'date-fns';
 import {
   getDemoCalendarData,
   formatEventTime,
   type CalendarData,
   type CalendarEvent,
-} from "@/lib/calendar";
-import { opacity, staggerContainer, staggerItem } from "@/lib/tokens";
+} from '@/lib/calendar';
+import { opacity, staggerContainer, staggerItem } from '@/lib/tokens';
 
 // ============================================
 // CONFIGURATION
@@ -27,7 +27,7 @@ interface CalendarAPIResponse {
     end: string;
     allDay: boolean;
     location?: string;
-    calendar: "primary" | "secondary";
+    calendar: 'primary' | 'secondary';
   }>;
   tomorrowEvents: Array<{
     id: string;
@@ -36,7 +36,7 @@ interface CalendarAPIResponse {
     end: string;
     allDay: boolean;
     location?: string;
-    calendar: "primary" | "secondary";
+    calendar: 'primary' | 'secondary';
   }>;
   upcomingEvents: Array<{
     id: string;
@@ -45,13 +45,13 @@ interface CalendarAPIResponse {
     end: string;
     allDay: boolean;
     location?: string;
-    calendar: "primary" | "secondary";
+    calendar: 'primary' | 'secondary';
   }>;
   lastUpdated: string;
 }
 
 function parseAPIResponse(data: CalendarAPIResponse): CalendarData {
-  const parseEvents = (events: CalendarAPIResponse["todayEvents"]): CalendarEvent[] =>
+  const parseEvents = (events: CalendarAPIResponse['todayEvents']): CalendarEvent[] =>
     events.map((e) => ({
       ...e,
       start: new Date(e.start),
@@ -88,16 +88,14 @@ function EventItem({ event, showTime = true, isPast = false }: EventItemProps) {
       {/* Calendar indicator dot */}
       <div
         className={`w-2 h-2 rounded-full mt-2 flex-shrink-0 ${
-          event.calendar === "primary" ? "bg-white" : "bg-white/50"
+          event.calendar === 'primary' ? 'bg-white' : 'bg-white/50'
         }`}
         style={{ opacity: opacity.secondary }}
       />
 
       {/* Event details */}
       <div className="flex-1 min-w-0">
-        <div className="text-mirror-base font-light font-body truncate">
-          {event.title}
-        </div>
+        <div className="text-mirror-base font-light font-body truncate">{event.title}</div>
 
         {event.location && (
           <div
@@ -158,7 +156,7 @@ function EventSection({ title, events, showDate = false }: EventSectionProps) {
                   animate={{ opacity: opacity.disabled }}
                   className="text-mirror-xs font-extralight font-body mt-4 first:mt-0"
                 >
-                  {format(event.start, "EEE, MMM d")}
+                  {format(event.start, 'EEE, MMM d')}
                 </motion.div>
               )}
               <EventItem event={event} isPast={isPast} />
@@ -180,12 +178,8 @@ function EmptyState() {
       className="mt-6 py-8 text-center"
       style={{ opacity: opacity.tertiary }}
     >
-      <div className="text-mirror-base font-extralight font-body">
-        No events scheduled
-      </div>
-      <div className="text-mirror-sm font-extralight font-body mt-2">
-        Enjoy your free time
-      </div>
+      <div className="text-mirror-base font-extralight font-body">No events scheduled</div>
+      <div className="text-mirror-sm font-extralight font-body mt-2">Enjoy your free time</div>
     </motion.div>
   );
 }
@@ -202,7 +196,7 @@ export default function Calendar() {
     async function loadCalendar() {
       try {
         // Try to fetch from API
-        const response = await fetch("/api/calendar");
+        const response = await fetch('/api/calendar');
 
         if (response.ok) {
           const data: CalendarAPIResponse = await response.json();
@@ -210,12 +204,12 @@ export default function Calendar() {
           setIsDemo(false);
         } else {
           // Fall back to demo data
-          console.warn("Calendar API failed, using demo data");
+          console.warn('Calendar API failed, using demo data');
           setCalendar(getDemoCalendarData());
           setIsDemo(true);
         }
       } catch (error) {
-        console.error("Calendar fetch error:", error);
+        console.error('Calendar fetch error:', error);
         setCalendar(getDemoCalendarData());
         setIsDemo(true);
       } finally {
@@ -236,9 +230,7 @@ export default function Calendar() {
     return (
       <div className="widget">
         <div className="label">Calendar</div>
-        <div className="mt-6 text-mirror-base font-extralight opacity-disabled">
-          Loading...
-        </div>
+        <div className="mt-6 text-mirror-base font-extralight opacity-disabled">Loading...</div>
       </div>
     );
   }
@@ -261,12 +253,7 @@ export default function Calendar() {
     calendar.upcomingEvents.length === 0;
 
   return (
-    <motion.div
-      className="widget"
-      initial="initial"
-      animate="animate"
-      variants={staggerContainer}
-    >
+    <motion.div className="widget" initial="initial" animate="animate" variants={staggerContainer}>
       {/* Header */}
       <div className="flex items-baseline justify-between">
         <span className="label">Calendar</span>
@@ -275,7 +262,7 @@ export default function Calendar() {
           className="text-mirror-sm font-extralight font-body"
           style={{ opacity: opacity.tertiary }}
         >
-          {format(new Date(), "MMMM d")}
+          {format(new Date(), 'MMMM d')}
         </motion.span>
       </div>
 
@@ -290,11 +277,7 @@ export default function Calendar() {
           <EventSection title="Tomorrow" events={calendar.tomorrowEvents} />
 
           {/* Upcoming events */}
-          <EventSection
-            title="This Week"
-            events={calendar.upcomingEvents}
-            showDate
-          />
+          <EventSection title="This Week" events={calendar.upcomingEvents} showDate />
         </>
       )}
 
@@ -304,7 +287,7 @@ export default function Calendar() {
           className="text-mirror-xs font-extralight font-body"
           style={{ opacity: opacity.disabled }}
         >
-          {isDemo ? "Demo data" : `Updated ${format(calendar.lastUpdated, "h:mm a")}`}
+          {isDemo ? 'Demo data' : `Updated ${format(calendar.lastUpdated, 'h:mm a')}`}
         </span>
       </motion.div>
     </motion.div>

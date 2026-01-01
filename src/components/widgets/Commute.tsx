@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { format } from "date-fns";
+import { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { format } from 'date-fns';
 import {
   formatDuration,
   formatDistance,
@@ -10,8 +10,8 @@ import {
   isWorkdayMorning,
   type CommuteAPIResponse,
   type TrafficStatus,
-} from "@/lib/commute";
-import { opacity, staggerContainer, staggerItem } from "@/lib/tokens";
+} from '@/lib/commute';
+import { opacity, staggerContainer, staggerItem } from '@/lib/tokens';
 
 // ============================================
 // CONFIGURATION
@@ -19,7 +19,7 @@ import { opacity, staggerContainer, staggerItem } from "@/lib/tokens";
 const REFRESH_INTERVAL = 5 * 60 * 1000; // 5 minutes
 const ROTATION_INTERVAL = 8000; // 8 seconds between commutes
 const VISIBILITY_CHECK_INTERVAL = 60 * 1000; // Check visibility every minute
-const IS_DEV = process.env.NODE_ENV === "development"; // Always show in dev mode
+const IS_DEV = process.env.NODE_ENV === 'development'; // Always show in dev mode
 
 // ============================================
 // PARSED COMMUTE DATA TYPE
@@ -44,9 +44,9 @@ interface TrafficBadgeProps {
 
 function TrafficBadge({ status, delayMinutes }: TrafficBadgeProps) {
   const statusColors: Record<TrafficStatus, string> = {
-    light: "bg-white/10",
-    moderate: "bg-white/15",
-    heavy: "bg-white/20",
+    light: 'bg-white/10',
+    moderate: 'bg-white/15',
+    heavy: 'bg-white/20',
   };
 
   return (
@@ -58,10 +58,7 @@ function TrafficBadge({ status, delayMinutes }: TrafficBadgeProps) {
         {getTrafficLabel(status)}
       </span>
       {delayMinutes > 0 && (
-        <span
-          className="text-mirror-xs font-extralight"
-          style={{ opacity: opacity.tertiary }}
-        >
+        <span className="text-mirror-xs font-extralight" style={{ opacity: opacity.tertiary }}>
           +{Math.round(delayMinutes)} min delay
         </span>
       )}
@@ -82,7 +79,7 @@ function CommuteCard({ commute }: CommuteCardProps) {
       initial={{ opacity: 0, x: -20 }}
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: 20 }}
-      transition={{ duration: 0.5, ease: "easeOut" }}
+      transition={{ duration: 0.5, ease: 'easeOut' }}
       className="space-y-4"
     >
       {/* Duration - Hero display */}
@@ -99,17 +96,11 @@ function CommuteCard({ commute }: CommuteCardProps) {
       </div>
 
       {/* Traffic status */}
-      <TrafficBadge
-        status={commute.trafficStatus}
-        delayMinutes={commute.trafficDelayMinutes}
-      />
+      <TrafficBadge status={commute.trafficStatus} delayMinutes={commute.trafficDelayMinutes} />
 
       {/* Suggested departure */}
-      <div
-        className="text-mirror-xl font-light font-body"
-        style={{ opacity: opacity.primary }}
-      >
-        Leave by {format(commute.suggestedDepartureTime, "h:mm a")}
+      <div className="text-mirror-xl font-light font-body" style={{ opacity: opacity.primary }}>
+        Leave by {format(commute.suggestedDepartureTime, 'h:mm a')}
       </div>
 
       {/* Target arrival */}
@@ -117,7 +108,7 @@ function CommuteCard({ commute }: CommuteCardProps) {
         className="text-mirror-sm font-extralight font-body"
         style={{ opacity: opacity.tertiary }}
       >
-        to arrive by {commute.targetArrivalTime.replace(/^0/, "")}
+        to arrive by {commute.targetArrivalTime.replace(/^0/, '')}
       </div>
     </motion.div>
   );
@@ -141,9 +132,8 @@ function RotationDots({ count, activeIndex }: RotationDotsProps) {
           key={i}
           className="w-2 h-2 rounded-full"
           animate={{
-            backgroundColor: i === activeIndex
-              ? "rgba(255, 255, 255, 0.6)"
-              : "rgba(255, 255, 255, 0.2)",
+            backgroundColor:
+              i === activeIndex ? 'rgba(255, 255, 255, 0.6)' : 'rgba(255, 255, 255, 0.2)',
           }}
           transition={{ duration: 0.3 }}
         />
@@ -189,7 +179,7 @@ export default function Commute() {
 
     async function loadCommute() {
       try {
-        const response = await fetch("/api/commute");
+        const response = await fetch('/api/commute');
 
         if (response.ok) {
           const data: CommuteAPIResponse = await response.json();
@@ -205,7 +195,7 @@ export default function Commute() {
           setLastUpdated(new Date(data.lastUpdated));
         }
       } catch (error) {
-        console.error("Commute fetch error:", error);
+        console.error('Commute fetch error:', error);
       } finally {
         setLoading(false);
       }
@@ -255,24 +245,16 @@ export default function Commute() {
   const activeCommute = commutes[activeIndex];
 
   return (
-    <motion.div
-      className="widget"
-      initial="initial"
-      animate="animate"
-      variants={staggerContainer}
-    >
+    <motion.div className="widget" initial="initial" animate="animate" variants={staggerContainer}>
       {/* Header */}
-      <motion.div
-        variants={staggerItem}
-        className="flex items-baseline justify-between"
-      >
+      <motion.div variants={staggerItem} className="flex items-baseline justify-between">
         <span className="label">Commute</span>
         <span
           className="text-mirror-sm font-extralight font-body"
           style={{ opacity: opacity.tertiary }}
         >
           {activeCommute.name}&apos;s Commute
-          {isDemo && " (Demo)"}
+          {isDemo && ' (Demo)'}
         </span>
       </motion.div>
 
@@ -293,7 +275,7 @@ export default function Commute() {
             className="text-mirror-xs font-extralight font-body"
             style={{ opacity: opacity.disabled }}
           >
-            Updated {format(lastUpdated, "h:mm a")}
+            Updated {format(lastUpdated, 'h:mm a')}
           </span>
         </motion.div>
       )}

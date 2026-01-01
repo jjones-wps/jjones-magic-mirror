@@ -1,5 +1,4 @@
 import type { NextAuthConfig } from 'next-auth';
-import type { JWT } from 'next-auth/jwt';
 import Credentials from 'next-auth/providers/credentials';
 import bcrypt from 'bcryptjs';
 import { prisma } from '@/lib/db';
@@ -117,9 +116,7 @@ export const serverAuthConfig: NextAuthConfig = {
     async signOut(message) {
       // message can contain either { session } or { token }
       const userId =
-        'token' in message && message.token?.id
-          ? (message.token.id as string)
-          : undefined;
+        'token' in message && message.token?.id ? (message.token.id as string) : undefined;
 
       if (userId) {
         try {

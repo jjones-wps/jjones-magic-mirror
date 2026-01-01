@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { useEffect, useRef, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { opacity } from "@/lib/tokens";
+import { useEffect, useRef, useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { opacity } from '@/lib/tokens';
 
 // Poll interval in milliseconds (30 seconds)
 const POLL_INTERVAL = 30 * 1000;
@@ -27,7 +27,7 @@ export default function VersionChecker() {
 
     async function checkVersion() {
       try {
-        const response = await fetch("/api/version");
+        const response = await fetch('/api/version');
         if (!response.ok) return;
 
         const data: VersionResponse = await response.json();
@@ -38,8 +38,10 @@ export default function VersionChecker() {
           console.log(`[VersionChecker] Initial build: ${data.buildTime}`);
 
           // In dev mode, set up periodic refresh (page reloads, so this re-triggers)
-          if (data.buildTime === "development") {
-            console.log(`[VersionChecker] Dev mode - auto-refresh in ${DEV_REFRESH_INTERVAL / 1000}s`);
+          if (data.buildTime === 'development') {
+            console.log(
+              `[VersionChecker] Dev mode - auto-refresh in ${DEV_REFRESH_INTERVAL / 1000}s`
+            );
             devRefreshTimeout = setTimeout(() => {
               window.location.reload();
             }, DEV_REFRESH_INTERVAL);
@@ -60,7 +62,7 @@ export default function VersionChecker() {
           }, REFRESH_DELAY);
         }
       } catch (error) {
-        console.error("[VersionChecker] Failed to check version:", error);
+        console.error('[VersionChecker] Failed to check version:', error);
       }
     }
 
@@ -90,9 +92,7 @@ export default function VersionChecker() {
             className="px-6 py-3 rounded-full bg-white/10 backdrop-blur-sm"
             style={{ opacity: opacity.secondary }}
           >
-            <span className="text-mirror-sm font-light tracking-wide font-body">
-              Updating...
-            </span>
+            <span className="text-mirror-sm font-light tracking-wide font-body">Updating...</span>
           </div>
         </motion.div>
       )}

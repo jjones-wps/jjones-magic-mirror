@@ -112,6 +112,7 @@ git push origin main
 ```
 
 A self-hosted GitHub Actions runner on the Pi will:
+
 1. Pull latest from git
 2. Install dependencies
 3. Build for production

@@ -20,12 +20,14 @@ npm run lint     # Run ESLint
 The Pi runs the Next.js server locally with pm2 process manager.
 
 **Pi Details:**
+
 - IP: `192.168.1.213`
 - SSH: `ssh jjones@192.168.1.213`
 - Timezone: `America/Indiana/Indianapolis` (EST)
 - Node.js: v22.21.0
 
 **Key Paths on Pi:**
+
 ```
 /home/jjones/magic-mirror/     # App directory (git repo)
 /home/jjones/magic-mirror/.env.local  # Environment config
@@ -34,6 +36,7 @@ The Pi runs the Next.js server locally with pm2 process manager.
 ```
 
 **Process Manager (pm2):**
+
 ```bash
 pm2 status              # Check server status
 pm2 logs magic-mirror   # View server logs
@@ -45,11 +48,13 @@ pm2 restart magic-mirror # Quick restart (no rebuild)
 Deployments are **fully automated** via GitHub Actions with a self-hosted runner on the Pi.
 
 **Just push to main:**
+
 ```bash
 git add . && git commit -m "your changes" && git push
 ```
 
 The deploy workflow automatically:
+
 1. 📥 Pulls latest from git (`git reset --hard origin/main`)
 2. 📦 Installs dependencies (`npm ci`)
 3. 🔨 Builds production (`npm run build`)
@@ -57,11 +62,13 @@ The deploy workflow automatically:
 5. ✅ Verifies health (HTTP 200 check)
 
 **Monitor deploys:**
+
 - GitHub Actions tab: https://github.com/jjones-wps/jjones-magic-mirror/actions
 - Manual trigger: Actions → "Deploy to Magic Mirror" → "Run workflow"
 - CLI: `gh run list --repo jjones-wps/jjones-magic-mirror`
 
 **Runner management (on Pi):**
+
 ```bash
 cd ~/actions-runner
 sudo ./svc.sh status   # Check runner status
@@ -75,10 +82,12 @@ journalctl -u actions.runner.* -f  # View runner logs
 For local development with Pi display:
 
 **Dev machine setup:**
+
 - Dev machine: 192.168.1.190 (WSL2)
 - Start server: `npm run dev -- -H 0.0.0.0`
 
 **To switch Pi to dev mode (temporary):**
+
 ```bash
 # On Pi, edit kiosk.sh to point to dev machine
 # Change: http://localhost:3000 → http://192.168.1.190:3000
@@ -87,12 +96,14 @@ For local development with Pi display:
 ### Dev Mode Auto-Refresh
 
 In development mode:
+
 - **VersionChecker**: Full page refresh every 60 seconds
 - **AISummary**: Refreshes every 2 minutes (vs 30 min in production)
 
 ## Architecture
 
 ### Tech Stack
+
 - **Framework**: Next.js 16 with App Router
 - **Styling**: Tailwind CSS 4 + custom design system
 - **Animations**: Framer Motion
@@ -102,6 +113,7 @@ In development mode:
 - **Date Utilities**: date-fns
 
 ### Directory Structure
+
 ```
 src/
 ├── app/
@@ -130,6 +142,7 @@ src/
 ```
 
 ### Data Flow Pattern
+
 1. **API Routes** (`/api/*`) fetch external data server-side with caching
 2. **Widget Components** fetch from API routes client-side with `useEffect`
 3. **Periodic Refresh** via `setInterval` (weather: 15min, calendar: 5min, etc.)
@@ -146,6 +159,7 @@ The design follows strict principles documented in `docs/DESIGN_SYSTEM.md`:
 - **Target**: 1080x2560px portrait, optimized for Raspberry Pi performance
 
 ### Key CSS Classes
+
 - `.mirror-container` - Fixed 1080x2560 viewport
 - `.widget` - Standard widget padding
 - `.text-mirror-*` - Design system typography scale (6xl to xs)
@@ -155,7 +169,9 @@ The design follows strict principles documented in `docs/DESIGN_SYSTEM.md`:
 - `.animate-breathe` - 3s breathing opacity animation
 
 ### Animation Tokens (lib/tokens.ts)
+
 Framer Motion variants and springs for consistent animations across widgets. Key exports:
+
 - `clockDigitVariants` - "Waterfall of Time" digit transitions
 - `staggerContainer` / `staggerItem` - List stagger animations
 - `fadeInUp`, `fadeOnly` - Presence animations
@@ -209,27 +225,32 @@ When creating new widgets:
 ## Recent Changes (Dec 31, 2024 Session)
 
 ### AI Summary Enhancements
+
 - **Time-aware greetings**: LLM prompt now uses dynamic time-of-day ("morning", "afternoon", "evening", "night") instead of hardcoded "morning"
 - **News context**: LLM now receives article descriptions (up to 300 chars) in addition to headlines for better context
 - **Faster dev refresh**: Summary refreshes every 2 minutes in dev mode
 
 ### News API Improvements
+
 - Fixed HTML entity decoding (added generic `&#NNN;` decoder for entities like `&#039;`)
 - Increased description length from 200 to 300 characters
 
 ### Catholic Feast Day Feature (NEW)
+
 - **API**: `/api/feast-day` using `romcal` library with US Catholic calendar
 - **Display**: Shows feast day between date and greeting in Clock component
 - Returns: feastDay name, liturgical season, color, and rank
 - Refreshes hourly
 
 ### Version Checker Updates
+
 - In dev mode (`BUILD_TIME === "development"`), auto-refreshes page every 60 seconds
 - Production mode unchanged (polls for version changes every 30 seconds)
 
 ## Performance Considerations
 
 Target device is Raspberry Pi:
+
 - Only animate `transform` and `opacity` (GPU-accelerated)
 - Avoid backdrop-blur, SVG filters, heavy particle systems
 - Keep animations smooth (2-4 second breathing rhythms)
@@ -240,26 +261,28 @@ Target device is Raspberry Pi:
 **CI/CD Pipeline:** Push-to-deploy via GitHub Actions self-hosted runner on Pi. See "Deploying Changes" section above.
 
 **Key files:**
+
 - `.github/workflows/deploy.yml` - GitHub Actions workflow
 - `deploy.sh` - Deploy script (runs on Pi)
 
 The `VersionChecker` component (`src/components/VersionChecker.tsx`) provides auto-refresh:
+
 - Polls `/api/version` every 30 seconds (production) or 60 seconds (dev)
 - Compares `BUILD_TIME` from build vs current server
 - On mismatch, shows "Updating..." indicator and refreshes after 2s
 
 ## Key Files Modified This Session
 
-| File | Changes |
-|------|---------|
-| `.github/workflows/deploy.yml` | NEW - Push-to-deploy GitHub Actions workflow |
-| `deploy.sh` | NEW - Versioned deploy script with build timing |
-| `src/lib/commute.ts` | NEW - TomTom API utilities, types, demo data |
-| `src/app/api/commute/route.ts` | NEW - Commute API with TomTom routing integration |
+| File                                 | Changes                                               |
+| ------------------------------------ | ----------------------------------------------------- |
+| `.github/workflows/deploy.yml`       | NEW - Push-to-deploy GitHub Actions workflow          |
+| `deploy.sh`                          | NEW - Versioned deploy script with build timing       |
+| `src/lib/commute.ts`                 | NEW - TomTom API utilities, types, demo data          |
+| `src/app/api/commute/route.ts`       | NEW - Commute API with TomTom routing integration     |
 | `src/components/widgets/Commute.tsx` | NEW - Rotating commute widget (workday mornings only) |
-| `src/components/widgets/Clock.tsx` | Feast day with midnight refresh detection |
-| `src/app/api/summary/route.ts` | TypeScript strict mode fixes |
-| `kiosk.sh` | Updated to use localhost:3000 (on Pi) |
+| `src/components/widgets/Clock.tsx`   | Feast day with midnight refresh detection             |
+| `src/app/api/summary/route.ts`       | TypeScript strict mode fixes                          |
+| `kiosk.sh`                           | Updated to use localhost:3000 (on Pi)                 |
 
 ## Dependencies Added
 

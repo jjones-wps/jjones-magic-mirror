@@ -52,9 +52,7 @@ export default function WidgetsPage() {
   }, [fetchWidgets]);
 
   const toggleWidget = (id: string) => {
-    setWidgets((prev) =>
-      prev.map((w) => (w.id === id ? { ...w, enabled: !w.enabled } : w))
-    );
+    setWidgets((prev) => prev.map((w) => (w.id === id ? { ...w, enabled: !w.enabled } : w)));
     hasChanges.current = true;
     forceUpdate({});
   };
@@ -361,11 +359,7 @@ export default function WidgetsPage() {
           <button className="admin-btn admin-btn-secondary" onClick={handleDiscard}>
             Discard
           </button>
-          <button
-            className="admin-btn admin-btn-primary"
-            onClick={handleSave}
-            disabled={saving}
-          >
+          <button className="admin-btn admin-btn-primary" onClick={handleSave} disabled={saving}>
             {saving ? 'Saving...' : 'Save & Refresh Mirror'}
           </button>
         </div>

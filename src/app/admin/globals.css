@@ -81,9 +81,9 @@
 
 .admin-portal a,
 .admin-portal button,
-.admin-portal [role="button"],
-.admin-portal input[type="submit"],
-.admin-portal input[type="button"],
+.admin-portal [role='button'],
+.admin-portal input[type='submit'],
+.admin-portal input[type='button'],
 .admin-portal select,
 .admin-portal .admin-toggle,
 .admin-portal .admin-nav-item {
@@ -101,8 +101,8 @@
   position: fixed;
   inset: 0;
   background-image:
-    linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+    linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
   background-size: 32px 32px;
   pointer-events: none;
   z-index: 0;
@@ -203,8 +203,13 @@
 }
 
 @keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
 }
 
 /* Button Variants */
@@ -455,7 +460,15 @@
   animation: fadeInUp 0.4s ease-out forwards;
 }
 
-.admin-animate-in-delay-1 { animation-delay: 50ms; }
-.admin-animate-in-delay-2 { animation-delay: 100ms; }
-.admin-animate-in-delay-3 { animation-delay: 150ms; }
-.admin-animate-in-delay-4 { animation-delay: 200ms; }
+.admin-animate-in-delay-1 {
+  animation-delay: 50ms;
+}
+.admin-animate-in-delay-2 {
+  animation-delay: 100ms;
+}
+.admin-animate-in-delay-3 {
+  animation-delay: 150ms;
+}
+.admin-animate-in-delay-4 {
+  animation-delay: 200ms;
+}

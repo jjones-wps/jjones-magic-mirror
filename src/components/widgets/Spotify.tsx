@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { opacity } from "@/lib/tokens";
+import { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { opacity } from '@/lib/tokens';
 
 // ============================================
 // TYPES
@@ -10,7 +10,7 @@ import { opacity } from "@/lib/tokens";
 interface SpotifyData {
   isPlaying: boolean;
   configured: boolean;
-  type?: "track" | "podcast";
+  type?: 'track' | 'podcast';
   title?: string;
   artist?: string;
   album?: string;
@@ -37,13 +37,13 @@ function PlayingBars() {
           key={i}
           className="w-[3px] bg-white rounded-full"
           animate={{
-            height: ["40%", "100%", "60%", "80%", "40%"],
+            height: ['40%', '100%', '60%', '80%', '40%'],
           }}
           transition={{
             duration: 1,
             repeat: Infinity,
             delay: i * 0.15,
-            ease: "easeInOut",
+            ease: 'easeInOut',
           }}
         />
       ))}
@@ -68,7 +68,7 @@ function ProgressBar({ progress, duration }: ProgressBarProps) {
         className="h-full bg-white/40 rounded-full"
         initial={{ width: 0 }}
         animate={{ width: `${percentage}%` }}
-        transition={{ duration: 0.5, ease: "easeOut" }}
+        transition={{ duration: 0.5, ease: 'easeOut' }}
       />
     </div>
   );
@@ -81,7 +81,7 @@ function formatTime(ms: number): string {
   const seconds = Math.floor(ms / 1000);
   const mins = Math.floor(seconds / 60);
   const secs = seconds % 60;
-  return `${mins}:${secs.toString().padStart(2, "0")}`;
+  return `${mins}:${secs.toString().padStart(2, '0')}`;
 }
 
 // ============================================
@@ -94,13 +94,13 @@ export default function Spotify() {
   useEffect(() => {
     async function fetchNowPlaying() {
       try {
-        const response = await fetch("/api/spotify/now-playing");
+        const response = await fetch('/api/spotify/now-playing');
         if (response.ok) {
           const result = await response.json();
           setData(result);
         }
       } catch (error) {
-        console.error("Spotify fetch error:", error);
+        console.error('Spotify fetch error:', error);
       } finally {
         setLoading(false);
       }
@@ -119,9 +119,7 @@ export default function Spotify() {
     return (
       <div className="widget">
         <div className="label">Now Playing</div>
-        <div className="mt-4 text-mirror-base font-extralight opacity-disabled">
-          Loading...
-        </div>
+        <div className="mt-4 text-mirror-base font-extralight opacity-disabled">Loading...</div>
       </div>
     );
   }
@@ -158,9 +156,7 @@ export default function Spotify() {
             <line x1="10" y1="15" x2="10" y2="9" />
             <line x1="14" y1="15" x2="14" y2="9" />
           </svg>
-          <span className="text-mirror-base font-extralight font-body">
-            Nothing playing
-          </span>
+          <span className="text-mirror-base font-extralight font-body">Nothing playing</span>
         </motion.div>
       </motion.div>
     );
@@ -203,11 +199,11 @@ export default function Spotify() {
             className="text-mirror-base font-extralight font-body mt-1 truncate"
             style={{ opacity: opacity.secondary }}
           >
-            {data.type === "podcast" ? data.show : data.artist}
+            {data.type === 'podcast' ? data.show : data.artist}
           </div>
 
           {/* Album (for tracks only) */}
-          {data.type === "track" && data.album && (
+          {data.type === 'track' && data.album && (
             <div
               className="text-mirror-sm font-extralight font-body mt-1 truncate"
               style={{ opacity: opacity.tertiary }}

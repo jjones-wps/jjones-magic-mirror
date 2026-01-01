@@ -14,11 +14,7 @@ const navigation = [
   { name: 'System', href: '/admin/system', icon: '⚙' },
 ];
 
-export default function AdminLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -97,14 +93,10 @@ export default function AdminLayout({
               <Link
                 key={item.href}
                 href={item.href}
-                className={`admin-nav-item ${
-                  pathname === item.href ? 'active' : ''
-                }`}
+                className={`admin-nav-item ${pathname === item.href ? 'active' : ''}`}
                 style={{ textDecoration: 'none' }}
               >
-                <span style={{ marginRight: '6px', opacity: 0.6 }}>
-                  {item.icon}
-                </span>
+                <span style={{ marginRight: '6px', opacity: 0.6 }}>{item.icon}</span>
                 {item.name}
               </Link>
             ))}
@@ -170,16 +162,11 @@ export default function AdminLayout({
                     pathname === item.href
                       ? 'var(--admin-text-primary)'
                       : 'var(--admin-text-secondary)',
-                  background:
-                    pathname === item.href
-                      ? 'var(--admin-accent-muted)'
-                      : 'transparent',
+                  background: pathname === item.href ? 'var(--admin-accent-muted)' : 'transparent',
                   transition: 'all var(--transition-fast)',
                 }}
               >
-                <span style={{ opacity: 0.6, fontSize: '1.125rem' }}>
-                  {item.icon}
-                </span>
+                <span style={{ opacity: 0.6, fontSize: '1.125rem' }}>{item.icon}</span>
                 {item.name}
               </Link>
             ))}

@@ -3,7 +3,7 @@
  * Fetches and parses RSS feeds server-side
  */
 
-import { NextResponse } from "next/server";
+import { NextResponse } from 'next/server';
 
 // ============================================
 // TYPES
@@ -29,14 +29,14 @@ interface NewsResponse {
 
 const NEWS_FEEDS = [
   // Local Fort Wayne news (prioritized)
-  { url: "https://www.wane.com/feed/", source: "WANE 15" },
-  { url: "https://www.wishtv.com/feed/", source: "WISH-TV" }, // Indiana statewide
-  { url: "https://www.ibj.com/feed", source: "IBJ" }, // Indiana Business Journal
+  { url: 'https://www.wane.com/feed/', source: 'WANE 15' },
+  { url: 'https://www.wishtv.com/feed/', source: 'WISH-TV' }, // Indiana statewide
+  { url: 'https://www.ibj.com/feed', source: 'IBJ' }, // Indiana Business Journal
 
   // National headlines
-  { url: "https://rss.nytimes.com/services/xml/rss/nyt/HomePage.xml", source: "NY Times" },
-  { url: "https://feeds.bbci.co.uk/news/world/rss.xml", source: "BBC" },
-  { url: "https://www.npr.org/rss/rss.php?id=1001", source: "NPR" },
+  { url: 'https://rss.nytimes.com/services/xml/rss/nyt/HomePage.xml', source: 'NY Times' },
+  { url: 'https://feeds.bbci.co.uk/news/world/rss.xml', source: 'BBC' },
+  { url: 'https://www.npr.org/rss/rss.php?id=1001', source: 'NPR' },
 
   // Tech news (optional - uncomment if desired)
   // { url: "https://feeds.arstechnica.com/arstechnica/index", source: "Ars Technica" },
@@ -47,14 +47,11 @@ const NEWS_FEEDS = [
 // RSS PARSING
 // ============================================
 
-async function fetchRSSFeed(
-  url: string,
-  source: string
-): Promise<NewsArticle[]> {
+async function fetchRSSFeed(url: string, source: string): Promise<NewsArticle[]> {
   try {
     const response = await fetch(url, {
       headers: {
-        "User-Agent": "MagicMirror/1.0",
+        'User-Agent': 'MagicMirror/1.0',
       },
       next: { revalidate: 300 }, // Cache for 5 minutes
     });
@@ -71,18 +68,18 @@ async function fetchRSSFeed(
     const itemMatches = text.match(/<item[^>]*>[\s\S]*?<\/item>/gi) || [];
 
     for (const itemXml of itemMatches.slice(0, 5)) {
-      const title = extractTag(itemXml, "title");
-      const link = extractTag(itemXml, "link");
-      const pubDate = extractTag(itemXml, "pubDate");
-      const guid = extractTag(itemXml, "guid");
-      const description = extractTag(itemXml, "description");
+      const title = extractTag(itemXml, 'title');
+      const link = extractTag(itemXml, 'link');
+      const pubDate = extractTag(itemXml, 'pubDate');
+      const guid = extractTag(itemXml, 'guid');
+      const description = extractTag(itemXml, 'description');
 
       if (title) {
         articles.push({
           id: guid || link || `${source}-${articles.length}`,
           title: cleanText(title),
           source,
-          link: link || "",
+          link: link || '',
           pubDate: pubDate ? new Date(pubDate).toISOString() : new Date().toISOString(),
           description: description ? cleanText(description).slice(0, 300) : undefined,
         });
@@ -99,22 +96,22 @@ async function fetchRSSFeed(
 
 function extractTag(xml: string, tag: string): string | null {
   // Handle both regular tags and CDATA
-  const regex = new RegExp(`<${tag}[^>]*>([\\s\\S]*?)</${tag}>`, "i");
+  const regex = new RegExp(`<${tag}[^>]*>([\\s\\S]*?)</${tag}>`, 'i');
   const match = xml.match(regex);
   return match ? match[1] : null;
 }
 
 function cleanText(text: string): string {
   return text
-    .replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, "$1") // Remove CDATA
+    .replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, '$1') // Remove CDATA
     .replace(/&#(\d+);/g, (_, num) => String.fromCharCode(parseInt(num, 10))) // Numeric entities
-    .replace(/&amp;/g, "&")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
     .replace(/&quot;/g, '"')
     .replace(/&apos;/g, "'")
-    .replace(/&nbsp;/g, " ")
-    .replace(/<[^>]+>/g, "") // Strip HTML tags
+    .replace(/&nbsp;/g, ' ')
+    .replace(/<[^>]+>/g, '') // Strip HTML tags
     .trim();
 }
 
@@ -124,9 +121,7 @@ function cleanText(text: string): string {
 
 export async function GET() {
   // Fetch all feeds in parallel
-  const results = await Promise.all(
-    NEWS_FEEDS.map((feed) => fetchRSSFeed(feed.url, feed.source))
-  );
+  const results = await Promise.all(NEWS_FEEDS.map((feed) => fetchRSSFeed(feed.url, feed.source)));
 
   // Merge all articles
   const allArticles = results.flat();

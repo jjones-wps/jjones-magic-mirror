@@ -39,7 +39,6 @@ export default function CalendarSettingsPage() {
   const [newFeedName, setNewFeedName] = useState('');
   const [newFeedUrl, setNewFeedUrl] = useState('');
   const [testing, setTesting] = useState(false);
-  const [saving, setSaving] = useState(false);
   const [daysAhead, setDaysAhead] = useState(7);
 
   const testUrl = async () => {
@@ -74,9 +73,7 @@ export default function CalendarSettingsPage() {
   };
 
   const toggleFeed = (id: string) => {
-    setFeeds(
-      feeds.map((f) => (f.id === id ? { ...f, enabled: !f.enabled } : f))
-    );
+    setFeeds(feeds.map((f) => (f.id === id ? { ...f, enabled: !f.enabled } : f)));
   };
 
   return (
@@ -109,7 +106,10 @@ export default function CalendarSettingsPage() {
           }}
         >
           <div>
-            <label className="admin-label" style={{ display: 'block', marginBottom: 'var(--space-sm)' }}>
+            <label
+              className="admin-label"
+              style={{ display: 'block', marginBottom: 'var(--space-sm)' }}
+            >
               Days Ahead
             </label>
             <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-md)' }}>
@@ -141,14 +141,13 @@ export default function CalendarSettingsPage() {
           </div>
 
           <div>
-            <label className="admin-label" style={{ display: 'block', marginBottom: 'var(--space-sm)' }}>
+            <label
+              className="admin-label"
+              style={{ display: 'block', marginBottom: 'var(--space-sm)' }}
+            >
               Max Events Shown
             </label>
-            <select
-              className="admin-input"
-              style={{ cursor: 'pointer' }}
-              defaultValue="5"
-            >
+            <select className="admin-input" style={{ cursor: 'pointer' }} defaultValue="5">
               <option value="3">3 events</option>
               <option value="5">5 events</option>
               <option value="7">7 events</option>
@@ -157,14 +156,13 @@ export default function CalendarSettingsPage() {
           </div>
 
           <div>
-            <label className="admin-label" style={{ display: 'block', marginBottom: 'var(--space-sm)' }}>
+            <label
+              className="admin-label"
+              style={{ display: 'block', marginBottom: 'var(--space-sm)' }}
+            >
               Refresh Interval
             </label>
-            <select
-              className="admin-input"
-              style={{ cursor: 'pointer' }}
-              defaultValue="5"
-            >
+            <select className="admin-input" style={{ cursor: 'pointer' }} defaultValue="5">
               <option value="1">1 minute</option>
               <option value="5">5 minutes</option>
               <option value="15">15 minutes</option>
@@ -189,10 +187,7 @@ export default function CalendarSettingsPage() {
               {feeds.length} feed{feeds.length !== 1 ? 's' : ''} configured
             </p>
           </div>
-          <button
-            className="admin-btn admin-btn-secondary"
-            onClick={() => setShowAddModal(true)}
-          >
+          <button className="admin-btn admin-btn-secondary" onClick={() => setShowAddModal(true)}>
             + Add Feed
           </button>
         </div>
@@ -231,8 +226,8 @@ export default function CalendarSettingsPage() {
                         feed.status === 'ok'
                           ? 'var(--admin-success)'
                           : feed.status === 'error'
-                          ? 'var(--admin-error)'
-                          : 'var(--admin-warning)',
+                            ? 'var(--admin-error)'
+                            : 'var(--admin-warning)',
                     }}
                   />
                   <h3 style={{ fontWeight: 500 }}>{feed.name}</h3>

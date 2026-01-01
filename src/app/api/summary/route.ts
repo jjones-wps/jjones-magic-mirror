@@ -3,7 +3,7 @@
  * Generates a personalized daily briefing
  */
 
-import { NextResponse } from "next/server";
+import { NextResponse } from 'next/server';
 
 // ============================================
 // TYPES
@@ -58,10 +58,10 @@ interface ContextData {
 
 function getGreeting(): string {
   const hour = new Date().getHours();
-  if (hour >= 5 && hour < 12) return "Good morning";
-  if (hour >= 12 && hour < 17) return "Good afternoon";
-  if (hour >= 17 && hour < 21) return "Good evening";
-  return "Good night";
+  if (hour >= 5 && hour < 12) return 'Good morning';
+  if (hour >= 12 && hour < 17) return 'Good afternoon';
+  if (hour >= 17 && hour < 21) return 'Good evening';
+  return 'Good night';
 }
 
 // ============================================
@@ -112,7 +112,7 @@ function generateTemplateSummary(context: ContextData): string {
       parts.push(`You have ${count} events on your calendar today.`);
     }
   } else {
-    parts.push("Your calendar is clear today.");
+    parts.push('Your calendar is clear today.');
   }
 
   // Add a contextual tip based on conditions
@@ -121,32 +121,32 @@ function generateTemplateSummary(context: ContextData): string {
     if (tip) parts.push(tip);
   }
 
-  return parts.join(" ");
+  return parts.join(' ');
 }
 
 function getWeatherDescription(code: number): string {
   const descriptions: Record<number, string> = {
-    0: "Clear",
-    1: "Mostly clear",
-    2: "Partly cloudy",
-    3: "Overcast",
-    45: "Foggy",
-    48: "Foggy",
-    51: "Light drizzle",
-    53: "Drizzle",
-    55: "Heavy drizzle",
-    61: "Light rain",
-    63: "Rain",
-    65: "Heavy rain",
-    71: "Light snow",
-    73: "Snow",
-    75: "Heavy snow",
-    80: "Rain showers",
-    81: "Rain showers",
-    82: "Heavy showers",
-    95: "Thunderstorms",
+    0: 'Clear',
+    1: 'Mostly clear',
+    2: 'Partly cloudy',
+    3: 'Overcast',
+    45: 'Foggy',
+    48: 'Foggy',
+    51: 'Light drizzle',
+    53: 'Drizzle',
+    55: 'Heavy drizzle',
+    61: 'Light rain',
+    63: 'Rain',
+    65: 'Heavy rain',
+    71: 'Light snow',
+    73: 'Snow',
+    75: 'Heavy snow',
+    80: 'Rain showers',
+    81: 'Rain showers',
+    82: 'Heavy showers',
+    95: 'Thunderstorms',
   };
-  return descriptions[code] || "Variable conditions";
+  return descriptions[code] || 'Variable conditions';
 }
 
 function getContextualTip(weather: WeatherCurrent, eventCount: number): string | null {
@@ -157,23 +157,23 @@ function getContextualTip(weather: WeatherCurrent, eventCount: number): string |
     tips.push("Don't forget an umbrella if you're heading out.");
   }
   if (weather.weatherCode >= 71 && weather.weatherCode <= 77) {
-    tips.push("Roads may be slick — drive carefully.");
+    tips.push('Roads may be slick — drive carefully.');
   }
   if (weather.temperature < 32) {
     tips.push("Bundle up, it's freezing out there.");
   }
   if (weather.temperature > 85) {
-    tips.push("Stay hydrated in this heat.");
+    tips.push('Stay hydrated in this heat.');
   }
 
   // Busy day tip
   if (eventCount >= 4) {
-    tips.push("Busy day ahead — pace yourself.");
+    tips.push('Busy day ahead — pace yourself.');
   }
 
   // Clear day tip
   if (eventCount === 0 && weather.weatherCode <= 2) {
-    tips.push("Perfect day to get outside and enjoy the weather.");
+    tips.push('Perfect day to get outside and enjoy the weather.');
   }
 
   return tips.length > 0 ? tips[Math.floor(Math.random() * tips.length)] : null;
@@ -183,8 +183,8 @@ function getContextualTip(weather: WeatherCurrent, eventCount: number): string |
 // OPENROUTER LLM INTEGRATION
 // ============================================
 
-const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
-const DEFAULT_MODEL = process.env.OPENROUTER_MODEL || "anthropic/claude-3-haiku";
+const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
+const DEFAULT_MODEL = process.env.OPENROUTER_MODEL || 'anthropic/claude-3-haiku';
 
 async function generateAISummary(context: ContextData): Promise<string | null> {
   const apiKey = process.env.OPENROUTER_API_KEY;
@@ -197,22 +197,22 @@ async function generateAISummary(context: ContextData): Promise<string | null> {
     const prompt = buildPrompt(context);
 
     const response = await fetch(OPENROUTER_URL, {
-      method: "POST",
+      method: 'POST',
       headers: {
-        "Content-Type": "application/json",
+        'Content-Type': 'application/json',
         Authorization: `Bearer ${apiKey}`,
-        "HTTP-Referer": process.env.SITE_URL || "http://localhost:3002",
-        "X-Title": "Magic Mirror",
+        'HTTP-Referer': process.env.SITE_URL || 'http://localhost:3002',
+        'X-Title': 'Magic Mirror',
       },
       body: JSON.stringify({
         model: DEFAULT_MODEL,
         messages: [
           {
-            role: "system",
+            role: 'system',
             content:
               "You are a helpful assistant for a smart mirror display. Generate a brief, friendly daily briefing in 2-3 sentences. Be warm but concise. Don't use emojis.",
           },
-          { role: "user", content: prompt },
+          { role: 'user', content: prompt },
         ],
         max_tokens: 150,
         temperature: 0.7,
@@ -221,7 +221,7 @@ async function generateAISummary(context: ContextData): Promise<string | null> {
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("OpenRouter API error:", response.status, errorText);
+      console.error('OpenRouter API error:', response.status, errorText);
       return null;
     }
 
@@ -229,17 +229,17 @@ async function generateAISummary(context: ContextData): Promise<string | null> {
     console.log(`AI summary generated using ${DEFAULT_MODEL}`);
     return data.choices?.[0]?.message?.content?.trim() || null;
   } catch (error) {
-    console.error("AI summary error:", error);
+    console.error('AI summary error:', error);
     return null;
   }
 }
 
 function getTimeOfDay(): string {
   const hour = new Date().getHours();
-  if (hour >= 5 && hour < 12) return "morning";
-  if (hour >= 12 && hour < 17) return "afternoon";
-  if (hour >= 17 && hour < 21) return "evening";
-  return "night";
+  if (hour >= 5 && hour < 12) return 'morning';
+  if (hour >= 12 && hour < 17) return 'afternoon';
+  if (hour >= 17 && hour < 21) return 'evening';
+  return 'night';
 }
 
 function buildPrompt(context: ContextData): string {
@@ -256,24 +256,24 @@ function buildPrompt(context: ContextData): string {
     const events = context.calendar.todayEvents
       .slice(0, 3)
       .map((e: CalendarEvent) => e.title)
-      .join(", ");
+      .join(', ');
     parts.push(`Today's events: ${events}`);
   } else {
-    parts.push("No events scheduled today.");
+    parts.push('No events scheduled today.');
   }
 
   if (context.news?.articles && context.news.articles.length > 0) {
     const newsItems = context.news.articles
       .slice(0, 3)
       .map((a: NewsArticle) => {
-        const desc = a.description ? ` - ${a.description}` : "";
+        const desc = a.description ? ` - ${a.description}` : '';
         return `• ${a.title}${desc}`;
       })
-      .join("\n");
+      .join('\n');
     parts.push(`Top news:\n${newsItems}`);
   }
 
-  return parts.join("\n");
+  return parts.join('\n');
 }
 
 // ============================================

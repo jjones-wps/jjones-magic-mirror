@@ -3,16 +3,9 @@
  * Fetches and parses iCal feeds server-side
  */
 
-import { NextResponse } from "next/server";
-import ical, { VEvent, CalendarComponent } from "node-ical";
-import {
-  isWithinInterval,
-  startOfDay,
-  endOfDay,
-  addDays,
-  isBefore,
-  isAfter,
-} from "date-fns";
+import { NextResponse } from 'next/server';
+import ical, { VEvent, CalendarComponent } from 'node-ical';
+import { isWithinInterval, startOfDay, endOfDay, addDays, isBefore, isAfter } from 'date-fns';
 
 // ============================================
 // TYPES
@@ -26,7 +19,7 @@ interface CalendarEvent {
   allDay: boolean;
   location?: string;
   description?: string;
-  calendar: "primary" | "secondary";
+  calendar: 'primary' | 'secondary';
 }
 
 interface CalendarResponse {
@@ -41,13 +34,10 @@ interface CalendarResponse {
 // ============================================
 
 function isVEvent(component: CalendarComponent): component is VEvent {
-  return component.type === "VEVENT";
+  return component.type === 'VEVENT';
 }
 
-function parseICalEvent(
-  event: VEvent,
-  calendar: "primary" | "secondary"
-): CalendarEvent | null {
+function parseICalEvent(event: VEvent, calendar: 'primary' | 'secondary'): CalendarEvent | null {
   try {
     const start = event.start instanceof Date ? event.start : new Date(String(event.start));
     const end = event.end instanceof Date ? event.end : new Date(String(event.end));
@@ -58,7 +48,7 @@ function parseICalEvent(
 
     // Determine if all-day event
     const allDay =
-      event.datetype === "date" ||
+      event.datetype === 'date' ||
       (start.getHours() === 0 &&
         start.getMinutes() === 0 &&
         end.getHours() === 0 &&
@@ -66,7 +56,7 @@ function parseICalEvent(
 
     return {
       id: String(event.uid || `${start.getTime()}-${event.summary}`),
-      title: String(event.summary || "Untitled Event"),
+      title: String(event.summary || 'Untitled Event'),
       start: start.toISOString(),
       end: isNaN(end.getTime()) ? start.toISOString() : end.toISOString(),
       allDay,
@@ -81,7 +71,7 @@ function parseICalEvent(
 
 async function fetchICalFeed(
   url: string,
-  calendar: "primary" | "secondary"
+  calendar: 'primary' | 'secondary'
 ): Promise<CalendarEvent[]> {
   try {
     console.log(`Fetching calendar: ${calendar} from ${url.substring(0, 50)}...`);
@@ -115,10 +105,7 @@ export async function GET() {
   const secondaryUrl = process.env.CALENDAR_URL_SECONDARY;
 
   if (!primaryUrl && !secondaryUrl) {
-    return NextResponse.json(
-      { error: "No calendar URLs configured" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'No calendar URLs configured' }, { status: 500 });
   }
 
   const now = new Date();
@@ -130,8 +117,8 @@ export async function GET() {
 
   // Fetch calendars in parallel
   const [primaryEvents, secondaryEvents] = await Promise.all([
-    primaryUrl ? fetchICalFeed(primaryUrl, "primary") : Promise.resolve([]),
-    secondaryUrl ? fetchICalFeed(secondaryUrl, "secondary") : Promise.resolve([]),
+    primaryUrl ? fetchICalFeed(primaryUrl, 'primary') : Promise.resolve([]),
+    secondaryUrl ? fetchICalFeed(secondaryUrl, 'secondary') : Promise.resolve([]),
   ]);
 
   // Merge and sort all events

@@ -161,7 +161,11 @@ export default function AdminDashboard() {
         }}
       >
         <p>Error: {error}</p>
-        <button className="admin-btn admin-btn-secondary" onClick={fetchData} style={{ marginTop: 'var(--space-md)' }}>
+        <button
+          className="admin-btn admin-btn-secondary"
+          onClick={fetchData}
+          style={{ marginTop: 'var(--space-md)' }}
+        >
           Retry
         </button>
       </div>
@@ -236,7 +240,12 @@ export default function AdminDashboard() {
             </span>
             {refreshing ? 'Refreshing...' : 'Refresh Display'}
           </button>
-          <a href="/" target="_blank" className="admin-btn admin-btn-primary" style={{ textDecoration: 'none' }}>
+          <a
+            href="/"
+            target="_blank"
+            className="admin-btn admin-btn-primary"
+            style={{ textDecoration: 'none' }}
+          >
             View Mirror →
           </a>
         </div>
@@ -330,9 +339,7 @@ export default function AdminDashboard() {
                     background: widget.enabled
                       ? 'var(--admin-success-muted)'
                       : 'var(--admin-accent-muted)',
-                    color: widget.enabled
-                      ? 'var(--admin-success)'
-                      : 'var(--admin-text-tertiary)',
+                    color: widget.enabled ? 'var(--admin-success)' : 'var(--admin-text-tertiary)',
                   }}
                 >
                   {widget.enabled ? '●' : '○'}

@@ -1,4 +1,4 @@
-import type { NextConfig } from "next";
+import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
   env: {
@@ -6,7 +6,7 @@ const nextConfig: NextConfig = {
     BUILD_TIME: new Date().toISOString(),
   },
   // Standalone output for Docker deployment
-  output: "standalone",
+  output: 'standalone',
 };
 
 export default nextConfig;

@@ -3,45 +3,43 @@
  * Exchanges authorization code for tokens
  */
 
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse } from 'next/server';
 
-const SPOTIFY_TOKEN_URL = "https://accounts.spotify.com/api/token";
+const SPOTIFY_TOKEN_URL = 'https://accounts.spotify.com/api/token';
 
 const client_id = process.env.SPOTIFY_CLIENT_ID;
 const client_secret = process.env.SPOTIFY_CLIENT_SECRET;
-const redirect_uri = process.env.SPOTIFY_REDIRECT_URI || "http://127.0.0.1:3000/api/spotify/callback";
+const redirect_uri =
+  process.env.SPOTIFY_REDIRECT_URI || 'http://127.0.0.1:3000/api/spotify/callback';
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
-  const code = searchParams.get("code");
-  const error = searchParams.get("error");
+  const code = searchParams.get('code');
+  const error = searchParams.get('error');
 
   if (error) {
     return NextResponse.json({ error }, { status: 400 });
   }
 
   if (!code) {
-    return NextResponse.json({ error: "No code provided" }, { status: 400 });
+    return NextResponse.json({ error: 'No code provided' }, { status: 400 });
   }
 
   if (!client_id || !client_secret) {
-    return NextResponse.json(
-      { error: "Spotify credentials not configured" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Spotify credentials not configured' }, { status: 500 });
   }
 
   try {
-    const basic = Buffer.from(`${client_id}:${client_secret}`).toString("base64");
+    const basic = Buffer.from(`${client_id}:${client_secret}`).toString('base64');
 
     const response = await fetch(SPOTIFY_TOKEN_URL, {
-      method: "POST",
+      method: 'POST',
       headers: {
         Authorization: `Basic ${basic}`,
-        "Content-Type": "application/x-www-form-urlencoded",
+        'Content-Type': 'application/x-www-form-urlencoded',
       },
       body: new URLSearchParams({
-        grant_type: "authorization_code",
+        grant_type: 'authorization_code',
         code,
         redirect_uri,
       }),
@@ -50,7 +48,7 @@ export async function GET(request: NextRequest) {
     if (!response.ok) {
       const errorData = await response.json();
       return NextResponse.json(
-        { error: "Token exchange failed", details: errorData },
+        { error: 'Token exchange failed', details: errorData },
         { status: response.status }
       );
     }
@@ -105,14 +103,11 @@ export async function GET(request: NextRequest) {
       </html>
       `,
       {
-        headers: { "Content-Type": "text/html" },
+        headers: { 'Content-Type': 'text/html' },
       }
     );
   } catch (error) {
-    console.error("Spotify callback error:", error);
-    return NextResponse.json(
-      { error: "Token exchange failed" },
-      { status: 500 }
-    );
+    console.error('Spotify callback error:', error);
+    return NextResponse.json({ error: 'Token exchange failed' }, { status: 500 });
   }
 }

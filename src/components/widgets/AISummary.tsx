@@ -1,14 +1,14 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
-import { format } from "date-fns";
-import { opacity, staggerContainer, staggerItem } from "@/lib/tokens";
+import { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
+import { format } from 'date-fns';
+import { opacity, staggerContainer, staggerItem } from '@/lib/tokens';
 
 // ============================================
 // CONFIGURATION
 // ============================================
-const IS_DEV = process.env.NODE_ENV === "development";
+const IS_DEV = process.env.NODE_ENV === 'development';
 const REFRESH_INTERVAL = IS_DEV ? 2 * 60 * 1000 : 30 * 60 * 1000; // 2 min dev, 30 min prod
 
 // ============================================
@@ -31,11 +31,11 @@ interface TypewriterProps {
 }
 
 function Typewriter({ text, speed = 30, onComplete }: TypewriterProps) {
-  const [displayText, setDisplayText] = useState("");
+  const [displayText, setDisplayText] = useState('');
   const [isComplete, setIsComplete] = useState(false);
 
   useEffect(() => {
-    setDisplayText("");
+    setDisplayText('');
     setIsComplete(false);
 
     let index = 0;
@@ -79,7 +79,7 @@ export default function AISummary() {
   useEffect(() => {
     async function loadSummary() {
       try {
-        const response = await fetch("/api/summary");
+        const response = await fetch('/api/summary');
 
         if (response.ok) {
           const data: SummaryAPIResponse = await response.json();
@@ -90,7 +90,7 @@ export default function AISummary() {
           setError(true);
         }
       } catch (err) {
-        console.error("Summary fetch error:", err);
+        console.error('Summary fetch error:', err);
         setError(true);
       } finally {
         setLoading(false);
@@ -130,12 +130,7 @@ export default function AISummary() {
   }
 
   return (
-    <motion.div
-      className="widget"
-      initial="initial"
-      animate="animate"
-      variants={staggerContainer}
-    >
+    <motion.div className="widget" initial="initial" animate="animate" variants={staggerContainer}>
       {/* Header */}
       <div className="flex items-baseline justify-between">
         <span className="label">Daily Briefing</span>
@@ -144,7 +139,7 @@ export default function AISummary() {
           className="text-mirror-sm font-extralight font-body"
           style={{ opacity: opacity.tertiary }}
         >
-          {format(new Date(summary.lastUpdated), "h:mm a")}
+          {format(new Date(summary.lastUpdated), 'h:mm a')}
         </motion.span>
       </div>
 

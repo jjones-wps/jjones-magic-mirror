@@ -1,15 +1,14 @@
-import Clock from "@/components/widgets/Clock";
-import Weather from "@/components/widgets/Weather";
-import Calendar from "@/components/widgets/Calendar";
-import News from "@/components/widgets/News";
-import AISummary from "@/components/widgets/AISummary";
-import Spotify from "@/components/widgets/Spotify";
-import Commute from "@/components/widgets/Commute";
+import Clock from '@/components/widgets/Clock';
+import Weather from '@/components/widgets/Weather';
+import Calendar from '@/components/widgets/Calendar';
+import News from '@/components/widgets/News';
+import AISummary from '@/components/widgets/AISummary';
+import Spotify from '@/components/widgets/Spotify';
+import Commute from '@/components/widgets/Commute';
 
 export default function MirrorPage() {
   return (
     <main className="mirror-container mx-auto bg-black flex flex-col">
-
       {/* Top Section - Clock */}
       <section className="pt-12">
         <Clock />
