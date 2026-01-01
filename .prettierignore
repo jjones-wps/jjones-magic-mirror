@@ -1,0 +1,24 @@
+# Dependencies
+node_modules
+
+# Build outputs
+.next
+out
+build
+dist
+
+# Database
+*.db
+*.db-journal
+
+# Environment files
+.env*
+
+# Misc
+*.log
+.DS_Store
+coverage
+.playwright-mcp
+
+# Test artifacts
+*.db-journal
