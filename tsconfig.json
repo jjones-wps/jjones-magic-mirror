@@ -30,5 +30,13 @@
     ".next/dev/types/**/*.ts",
     "**/*.mts"
   ],
-  "exclude": ["node_modules"]
+  "exclude": [
+    "node_modules",
+    "prisma",
+    "src/lib/auth",
+    "src/app/api/admin",
+    "src/app/api/auth",
+    "src/app/admin",
+    "src/proxy.ts"
+  ]
 }

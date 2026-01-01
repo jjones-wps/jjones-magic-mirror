@@ -4,8 +4,8 @@ import bcrypt from 'bcryptjs';
 import { prisma } from '@/lib/db';
 import { authConfig } from './config';
 
-// Extend JWT types for server-side use
-declare module 'next-auth/jwt' {
+// Extend JWT types for server-side use (next-auth v5)
+declare module '@auth/core/jwt' {
   interface JWT {
     id: string;
     email: string;
