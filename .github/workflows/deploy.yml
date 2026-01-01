@@ -13,8 +13,34 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  test:
+    name: Run Tests
+    runs-on: [self-hosted, raspberry-pi]
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout code
+        run: |
+          cd /home/jjones/magic-mirror
+          git fetch origin
+          git reset --hard origin/main
+
+      - name: Install dependencies
+        run: |
+          cd /home/jjones/magic-mirror
+          npm ci
+
+      - name: Run test suite
+        run: |
+          cd /home/jjones/magic-mirror
+          npm run test:ci
+
+      - name: Report test results
+        run: echo "✅ All tests passed!"
+
   deploy:
     name: Deploy to Raspberry Pi
+    needs: test
     runs-on: [self-hosted, raspberry-pi]
     timeout-minutes: 10
 
@@ -23,4 +49,4 @@ jobs:
         run: /home/jjones/magic-mirror/deploy.sh
 
       - name: Report success
-        run: echo "Deployment completed successfully!"
+        run: echo "🚀 Deployment completed successfully!"
