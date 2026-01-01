@@ -62,33 +62,54 @@ Open [http://localhost:3000](http://localhost:3000) to view the mirror.
 
 ## Environment Variables
 
-Create a `.env.local` file with the following:
+Create a `.env.local` file based on `.env.example`:
 
 ```bash
-# Calendar (iCal feeds)
+cp .env.example .env.local
+```
+
+Then configure the following variables:
+
+### Required
+
+```bash
+# Calendar (iCal feeds from iCloud, Google, etc.)
 CALENDAR_URL_PRIMARY=https://...
 CALENDAR_URL_SECONDARY=https://...
 
-# Weather location
+# Weather location (get coordinates from latlong.net)
 WEATHER_LAT=41.0793
 WEATHER_LON=-85.1394
 WEATHER_LOCATION=Fort Wayne, IN
 
-# Spotify (optional)
+# AI Summary (get API key from openrouter.ai)
+OPENROUTER_API_KEY=sk-or-v1-...
+OPENROUTER_MODEL=anthropic/claude-3-haiku
+```
+
+### Optional Features
+
+```bash
+# Spotify Now Playing (create app at developer.spotify.com)
 SPOTIFY_CLIENT_ID=...
 SPOTIFY_CLIENT_SECRET=...
 
-# AI Summary (OpenRouter)
-OPENROUTER_API_KEY=...
-OPENROUTER_MODEL=anthropic/claude-3-haiku
-
-# TomTom Commute
+# Traffic-Aware Commute Times (get key from developer.tomtom.com)
 TOMTOM_API_KEY=...
 COMMUTE_1_NAME=Person1
-COMMUTE_1_ORIGIN=lat,lon
-COMMUTE_1_DESTINATION=lat,lon
-COMMUTE_1_ARRIVAL_TIME=08:00
+COMMUTE_1_ORIGIN=41.0454,-85.1455        # lat,lon coordinates
+COMMUTE_1_DESTINATION=41.1327,-85.1762
+COMMUTE_1_ARRIVAL_TIME=08:00             # 24-hour format
+# ... (COMMUTE_2_* variables available)
+
+# Admin Portal (requires authentication setup)
+NEXTAUTH_SECRET=<generate with: openssl rand -base64 32>
+NEXTAUTH_URL=http://localhost:3000
+ADMIN_EMAIL=admin@example.com
+ADMIN_PASSWORD_HASH=<generate with bcryptjs>
 ```
+
+See `.env.example` for complete configuration with detailed comments.
 
 ## Scripts
 
