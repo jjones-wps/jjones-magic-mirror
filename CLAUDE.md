@@ -307,6 +307,49 @@ The project has a robust CI/CD pipeline, but certain issues can occur. See `docs
 
 ## Recent Session History
 
+### January 2, 2026 - Chrome DevTools Migration & Performance Optimization
+
+**Primary Achievement**: Completed migration from Playwright to Chrome DevTools MCP for browser automation and debugging.
+
+**Chrome DevTools Integration**:
+- ✅ Verified WSL2 → Windows port proxy configuration working
+- ✅ Tested all capabilities: navigation, snapshots, console monitoring, network analysis, screenshots
+- ✅ Successfully automated testing on GitHub.com and Magic Mirror app
+- ✅ Removed all Playwright references from documentation and configs
+
+**WSL2 Troubleshooting Documentation**:
+- Created comprehensive 350+ line Chrome DevTools section in global CLAUDE.md (`~/.claude/CLAUDE.md:249-601`)
+- Documented architecture: `WSL2 localhost → Windows port proxy → Chrome DevTools`
+- Added 6-step diagnostic checklist for connection issues
+- Documented common error patterns with specific solutions
+- Captured network topology notes for bridged WSL2 setup
+
+**Key Technical Insights**:
+- WSL2 bridged networking requires localhost (not IP addresses) for Chrome connection
+- Port proxy forwards `0.0.0.0:9222` → `127.0.0.1:9222` on Windows
+- Chrome must bind to `127.0.0.1:9222` with `--remote-debugging-address=127.0.0.1`
+- MCP config uses `http://localhost:9222/json` (WSL2 localhost forwarding handles the rest)
+
+**Performance Optimization Discovered via Chrome DevTools**:
+- Network analysis revealed 201 requests since page load
+- Spotify widget was polling every 10 seconds (6 calls/minute)
+- Optimized to 15 seconds (4 calls/minute) - 33% reduction
+- Better Raspberry Pi performance with no perceptible UX impact
+
+**Files Modified**:
+- `~/.claude/CLAUDE.md` - Complete chrome-devtools section rewrite (lines 249-601)
+- `~/.claude/CLAUDE.md` - Updated MCP Tool Selection Guide (removed Playwright)
+- `~/.claude/CLAUDE.md` - Updated "Combining MCP Tools" workflows
+- `src/components/widgets/Spotify.tsx` - Polling interval optimization
+
+**Testing Performed**:
+- Chrome DevTools on GitHub.com (8 capabilities verified)
+- Chrome DevTools on Magic Mirror (all widgets functional, no console errors)
+- Network analysis: 16 API calls, all 200 OK
+- Console monitoring: Clean (only HMR connected)
+
+**Commit**: `05266f7` - "perf(spotify): reduce polling interval from 10s to 15s"
+
 ### January 1, 2026 - Deployment Troubleshooting
 
 Successfully resolved 7 sequential build/test failures in CI/CD pipeline:
