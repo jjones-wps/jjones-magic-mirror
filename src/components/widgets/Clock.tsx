@@ -143,17 +143,31 @@ function is1111(time: Date): boolean {
 }
 
 // ============================================
+// CLOCK PROPS
+// ============================================
+interface ClockProps {
+  showTimezone?: boolean;
+}
+
+// ============================================
 // MAIN CLOCK COMPONENT
 // ============================================
-export default function Clock() {
+export default function Clock({ showTimezone = false }: ClockProps = {}) {
   const [time, setTime] = useState<Date | null>(null);
   const [feastDay, setFeastDay] = useState<FeastDay | null>(null);
   const [lastFetchDate, setLastFetchDate] = useState<string | null>(null);
+  const [timezone, setTimezone] = useState<string>('');
 
   useEffect(() => {
     // Set initial time on client to avoid hydration mismatch
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setTime(new Date());
+
+    // Get timezone if showTimezone is enabled
+    if (showTimezone) {
+      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      setTimezone(tz);
+    }
 
     // Update every second
     const interval = setInterval(() => {
@@ -161,7 +175,7 @@ export default function Clock() {
     }, 1000);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [showTimezone]);
 
   // Fetch feast day on mount and refresh hourly
   useEffect(() => {
@@ -308,6 +322,23 @@ export default function Clock() {
           {dateStr}
         </span>
       </motion.div>
+
+      {/* Timezone display (optional) */}
+      {showTimezone && timezone && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.6, duration: 0.6 }}
+          className="mt-2"
+        >
+          <span
+            className="text-mirror-sm font-extralight tracking-wider font-body"
+            style={{ opacity: opacity.tertiary }}
+          >
+            {timezone}
+          </span>
+        </motion.div>
+      )}
 
       {/* Feast day display */}
       {feastDay?.feastDay && (
