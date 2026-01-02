@@ -15,6 +15,7 @@
   - [Deployment Architecture](#deployment-architecture)
   - [Authentication Flow](#authentication-flow)
   - [Widget Lifecycle](#widget-lifecycle)
+  - [Caching Strategy](#caching-strategy)
 - [Technology Stack](#technology-stack)
 - [Key Architectural Decisions](#key-architectural-decisions)
 - [Performance Considerations](#performance-considerations)
@@ -496,6 +497,105 @@ stateDiagram-v2
         Update UI
         Cache in state
     end note
+```
+
+---
+
+### Caching Strategy
+
+The application uses a multi-tier caching approach to optimize performance and reduce external API calls.
+
+```mermaid
+graph TB
+    subgraph "Client Side (Browser)"
+        Widget[Widget Component]
+        LocalState[Local State<br/>useState/useEffect]
+        MemCache[In-Memory Cache<br/>Component State]
+    end
+
+    subgraph "Server Side (Next.js)"
+        APIRoute[API Route Handler]
+        NextCache[Next.js Cache<br/>fetch with revalidate]
+        ResponseCache[Response Cache<br/>Memory]
+    end
+
+    subgraph "External APIs"
+        External1[Open-Meteo]
+        External2[iCloud iCal]
+        External3[OpenRouter AI]
+        External4[Spotify]
+        External5[TomTom]
+    end
+
+    %% Request Flow
+    Widget -->|1. Fetch data<br/>Every N minutes| APIRoute
+
+    APIRoute -->|2. Check cache| NextCache
+
+    NextCache -->|Cache HIT<br/>< revalidate time| APIRoute
+    NextCache -->|Cache MISS<br/>or expired| External1
+    NextCache -->|Cache MISS<br/>or expired| External2
+    NextCache -->|Cache MISS<br/>or expired| External3
+    NextCache -->|Cache MISS<br/>or expired| External4
+    NextCache -->|Cache MISS<br/>or expired| External5
+
+    External1 -->|Fresh data| NextCache
+    External2 -->|Fresh data| NextCache
+    External3 -->|Fresh data| NextCache
+    External4 -->|Fresh data| NextCache
+    External5 -->|Fresh data| NextCache
+
+    NextCache -->|Store with<br/>revalidate timer| ResponseCache
+    APIRoute -->|3. Return JSON| Widget
+    Widget -->|4. Store in state| MemCache
+
+    %% Cache Lifetimes
+    note1[Weather: 15 min<br/>Calendar: 5 min<br/>News: 15 min]
+    note2[AI Summary: 30 min<br/>Spotify: Real-time<br/>Commute: 5 min]
+
+    NextCache -.-> note1
+    MemCache -.-> note2
+
+    %% Styling
+    classDef client fill:#4CAF50,stroke:#2e7d32,stroke-width:2px,color:#fff
+    classDef server fill:#2196F3,stroke:#1565c0,stroke-width:2px,color:#fff
+    classDef external fill:#FF9800,stroke:#e65100,stroke-width:2px,color:#000
+    classDef cache fill:#9C27B0,stroke:#6a1b9a,stroke-width:2px,color:#fff
+
+    class Widget,LocalState,MemCache client
+    class APIRoute server
+    class NextCache,ResponseCache cache
+    class External1,External2,External3,External4,External5 external
+```
+
+#### Cache Levels Explained
+
+| Level | Location | Duration | Purpose |
+|-------|----------|----------|---------|
+| **Component State** | Browser (React) | Until widget unmounts | Prevents unnecessary re-fetches during polling intervals |
+| **Next.js Cache** | Server (fetch API) | Per-route configuration | Reduces external API calls, configured via `revalidate` |
+| **API Response Cache** | Server (memory) | Same as Next.js cache | Shared across multiple client requests |
+
+#### Cache Configuration by Endpoint
+
+```typescript
+// Weather: 15 minutes
+export const revalidate = 900; // seconds
+
+// Calendar: 5 minutes
+export const revalidate = 300;
+
+// News: 15 minutes
+export const revalidate = 900;
+
+// AI Summary: 30 minutes
+export const revalidate = 1800;
+
+// Spotify: No server cache (real-time)
+export const dynamic = 'force-dynamic';
+
+// Commute: 5 minutes
+export const revalidate = 300;
 ```
 
 ---

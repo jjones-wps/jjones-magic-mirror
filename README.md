@@ -15,6 +15,91 @@ A smart magic mirror display built with Next.js, designed for a 1080x2560 portra
 - **Catholic Feast Days** - Liturgical calendar via romcal
 - **Commute Times** - Traffic-aware routing via TomTom (workday mornings)
 
+## Screenshots
+
+<!-- TODO: Add screenshots once captured from Raspberry Pi -->
+<!-- See public/screenshots/README.md for capture instructions -->
+
+### Full Mirror Display
+
+<!-- ![Magic Mirror full display showing all widgets in portrait mode](public/screenshots/full-mirror-display.png) -->
+
+**Coming soon:** Full 1080x2560 portrait display showing all widgets in action.
+
+### Feature Highlights
+
+<table>
+<tr>
+<td width="33%">
+
+**Clock Widget**
+<!-- ![Clock widget with time, date, and feast day](public/screenshots/clock-widget.png) -->
+
+*Animated digit transitions with "Waterfall of Time" effect*
+
+</td>
+<td width="33%">
+
+**Weather Widget**
+<!-- ![Weather widget showing current conditions and hourly forecast](public/screenshots/weather-widget.png) -->
+
+*Current conditions and 24-hour forecast*
+
+</td>
+<td width="33%">
+
+**Calendar Widget**
+<!-- ![Calendar widget displaying today's and tomorrow's events](public/screenshots/calendar-widget.png) -->
+
+*Today's events, tomorrow's preview*
+
+</td>
+</tr>
+<tr>
+<td width="33%">
+
+**AI Summary**
+<!-- ![AI daily briefing with personalized greeting](public/screenshots/ai-summary-widget.png) -->
+
+*Personalized morning briefing*
+
+</td>
+<td width="33%">
+
+**Spotify Now Playing**
+<!-- ![Spotify widget showing currently playing track](public/screenshots/spotify-widget.png) -->
+
+*Real-time track display*
+
+</td>
+<td width="33%">
+
+**Commute Times**
+<!-- ![Commute widget with traffic-aware routing](public/screenshots/commute-widget.png) -->
+
+*Traffic-aware departure times*
+
+</td>
+</tr>
+</table>
+
+### Animated Demos
+
+<!-- TODO: Add GIF demos once recorded -->
+<!-- See public/demos/README.md for recording instructions -->
+
+**Clock Digit Transitions**
+<!-- ![Animated clock showing digit transition effect](public/demos/clock-transition.gif) -->
+
+*Smooth "Waterfall of Time" animation as digits change*
+
+**Auto-Refresh on Deploy**
+<!-- ![Automatic page refresh after deployment](public/demos/auto-refresh.gif) -->
+
+*Seamless updates when new versions are deployed*
+
+---
+
 ## Documentation
 
 Comprehensive documentation is available in the [`docs/`](docs/) directory:
