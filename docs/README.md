@@ -253,12 +253,17 @@ tail -f ~/magic-mirror/deploy.log
 |----------|---------|----------|-------|
 | [README.md](../README.md) | Project overview, setup, features | Everyone | ~180 |
 | [CLAUDE.md](../CLAUDE.md) | AI-assisted dev guide, Pi setup | Developers | ~360 |
+| [CONTRIBUTING.md](../CONTRIBUTING.md) | Contribution guidelines & workflow | Contributors | ~470 |
+| [SECURITY.md](../SECURITY.md) | Security policy & vulnerability reporting | Security researchers, ops | ~280 |
+| [CHANGELOG.md](../CHANGELOG.md) | Version history & release notes | Everyone | ~280 |
+| [openapi.yaml](../openapi.yaml) | OpenAPI 3.0 specification (machine-readable) | API consumers, tools | ~950 |
 
 ### docs/ Directory
 
 | Document | Purpose | Audience | Lines |
 |----------|---------|----------|-------|
 | [API_DOCUMENTATION.md](./API_DOCUMENTATION.md) | Complete API reference for all 15 endpoints | Developers, integrators | ~1000 |
+| [OPENAPI.md](./OPENAPI.md) | OpenAPI 3.0 spec guide & usage | API consumers, integrators | ~330 |
 | [ARCHITECTURE.md](./ARCHITECTURE.md) | System design, diagrams, decisions | Architects, senior devs | ~700 |
 | [TESTING.md](./TESTING.md) | Test coverage, patterns, running tests | Developers, QA | ~220 |
 | [TROUBLESHOOTING.md](./TROUBLESHOOTING.md) | Deployment issues + solutions | DevOps, maintainers | ~480 |
@@ -275,6 +280,7 @@ tail -f ~/magic-mirror/deploy.log
 |----------|---------|----------|-------|
 | [PROJECT_AUDIT.md](./internal/PROJECT_AUDIT.md) | Comprehensive health assessment | Project managers, stakeholders | ~700 |
 | [SESSION_HANDOFF.md](./internal/SESSION_HANDOFF.md) | Context for continuing work | Future developers | ~310 |
+| [ADR-001-DOCUMENTATION-PLATFORM.md](./internal/ADR-001-DOCUMENTATION-PLATFORM.md) | Documentation platform decision record | Architects, maintainers | ~380 |
 
 ---
 
@@ -301,7 +307,7 @@ tail -f ~/magic-mirror/deploy.log
 → [TROUBLESHOOTING.md](./TROUBLESHOOTING.md)
 
 **API Integration**
-→ [API_DOCUMENTATION.md](./API_DOCUMENTATION.md)
+→ [API_DOCUMENTATION.md](./API_DOCUMENTATION.md) (human-readable) + [OPENAPI.md](./OPENAPI.md) (interactive spec)
 
 **Project Health & Status**
 → [internal/PROJECT_AUDIT.md](./internal/PROJECT_AUDIT.md)

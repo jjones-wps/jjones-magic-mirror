@@ -13,10 +13,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Comprehensive documentation reorganization into `docs/` directory
 - Added navigation hub (`docs/README.md`) with persona-based paths
 - Added complete API documentation (`docs/API_DOCUMENTATION.md`) for all 15 endpoints
-- Added architecture documentation (`docs/ARCHITECTURE.md`) with 5 Mermaid diagrams
+- Added architecture documentation (`docs/ARCHITECTURE.md`) with 6 Mermaid diagrams (including caching strategy)
 - Added contributing guidelines (`CONTRIBUTING.md`)
 - Added security policy (`SECURITY.md`)
+- Added changelog (`CHANGELOG.md`) following Keep a Changelog format
+- Added OpenAPI 3.0 specification (`openapi.yaml`) with usage guide (`docs/OPENAPI.md`)
+- Added architectural decision record for documentation platform (`docs/internal/ADR-001-DOCUMENTATION-PLATFORM.md`)
+- Added GitHub issue templates (bug report, feature request) and PR template
 - Reorganized docs into `docs/design/` and `docs/internal/` subdirectories
+- Enhanced architecture diagrams with color coding and caching strategy visualization
+- Added screenshot and demo infrastructure (`public/screenshots/`, `public/demos/`) with capture guides
 
 ---
 

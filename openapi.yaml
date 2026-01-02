@@ -1,0 +1,820 @@
+openapi: 3.0.3
+
+info:
+  title: Magic Mirror API
+  version: 1.0.0
+  description: |
+    REST API for the Magic Mirror smart display application. Provides server-side data fetching and caching for all widget data.
+
+    **Key Features:**
+    - Server-side caching via Next.js `revalidate` headers
+    - Parallel data fetching using `Promise.all()`
+    - Graceful degradation with demo/fallback data
+    - TypeScript-first with full type definitions
+
+    **API Design Patterns:**
+    - Proxy Pattern: External API calls proxied server-side for caching and security
+    - Merge Pattern: Multiple data sources merged server-side
+    - Transform Pattern: External API responses simplified for client consumption
+    - Fallback Pattern: Demo data provided when external APIs fail
+
+  contact:
+    name: Magic Mirror Repository
+    url: https://github.com/jjones-wps/jjones-magic-mirror
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:3000
+    description: Development server
+  - url: http://192.168.1.213:3000
+    description: Production Raspberry Pi (local network only)
+
+tags:
+  - name: Public Widgets
+    description: Unauthenticated endpoints for mirror widgets
+  - name: Admin
+    description: Authenticated admin portal endpoints (incomplete)
+  - name: OAuth
+    description: OAuth authorization flows
+
+paths:
+  /api/calendar:
+    get:
+      tags:
+        - Public Widgets
+      summary: Get calendar events
+      description: |
+        Fetches and parses iCal feeds from multiple calendars (iCloud, Google, etc.).
+        Categorizes events by today/tomorrow/upcoming.
+
+        **Data Sources:**
+        - Primary calendar (CALENDAR_URL_PRIMARY)
+        - Secondary calendar (CALENDAR_URL_SECONDARY)
+
+        **Caching:** No explicit caching (fresh data on each request)
+      operationId: getCalendar
+      responses:
+        '200':
+          description: Calendar events successfully retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CalendarResponse'
+        '500':
+          description: Server error or missing configuration
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/commute:
+    get:
+      tags:
+        - Public Widgets
+      summary: Get traffic-aware commute times
+      description: |
+        Calculates optimal departure times for configured commutes using TomTom Routing API.
+        Supports multiple commute configurations with arrival time targets.
+
+        **Display Logic:** Only shown on workday mornings (Mon-Fri, before 9 AM)
+
+        **Caching:** 5 minutes (300 seconds)
+      operationId: getCommute
+      responses:
+        '200':
+          description: Commute data successfully retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommuteResponse'
+        '500':
+          description: Server error
+
+  /api/config-version:
+    get:
+      tags:
+        - Admin
+      summary: Get configuration version
+      description: |
+        Returns current config version for admin portal cache invalidation.
+        Increments on any widget configuration change.
+
+        **Status:** Incomplete (admin portal in development)
+      operationId: getConfigVersion
+      responses:
+        '200':
+          description: Config version retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConfigVersionResponse'
+
+  /api/feast-day:
+    get:
+      tags:
+        - Public Widgets
+      summary: Get Catholic liturgical calendar
+      description: |
+        Returns today's feast day using romcal library with US Catholic calendar.
+
+        **Caching:** 1 hour (3600 seconds) - refreshes hourly
+      operationId: getFeastDay
+      responses:
+        '200':
+          description: Feast day data retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FeastDayResponse'
+
+  /api/news:
+    get:
+      tags:
+        - Public Widgets
+      summary: Get news headlines
+      description: |
+        Fetches and parses RSS feeds from multiple news sources.
+        Returns top stories with titles, descriptions, and links.
+
+        **Caching:** 15 minutes (900 seconds)
+      operationId: getNews
+      responses:
+        '200':
+          description: News headlines retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NewsResponse'
+
+  /api/spotify/now-playing:
+    get:
+      tags:
+        - Public Widgets
+      summary: Get currently playing Spotify track
+      description: |
+        Returns currently playing track from Spotify using OAuth tokens.
+        Supports both music tracks and podcasts.
+
+        **Authentication:** Requires valid Spotify OAuth tokens (managed via OAuth flow)
+        **Caching:** No server cache (real-time data)
+      operationId: getSpotifyNowPlaying
+      responses:
+        '200':
+          description: Now playing data retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SpotifyResponse'
+        '401':
+          description: Not authenticated or token expired
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Nothing currently playing
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  playing:
+                    type: boolean
+                    example: false
+
+  /api/summary:
+    get:
+      tags:
+        - Public Widgets
+      summary: Get AI-generated daily briefing
+      description: |
+        Generates personalized morning summary using OpenRouter (Claude 3 Haiku).
+        Includes weather summary, calendar overview, and news highlights.
+
+        **Time-Aware:** Greetings adapt to time of day (morning/afternoon/evening/night)
+        **Caching:** 30 minutes (1800 seconds)
+        **Fallback:** Template-based summary if AI API unavailable
+      operationId: getSummary
+      responses:
+        '200':
+          description: AI summary generated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SummaryResponse'
+
+  /api/version:
+    get:
+      tags:
+        - Public Widgets
+      summary: Get build version
+      description: |
+        Returns current build timestamp for auto-refresh functionality.
+        Client polls this endpoint to detect new deployments.
+
+        **Polling:** Every 30 seconds (production) or 60 seconds (dev)
+      operationId: getVersion
+      responses:
+        '200':
+          description: Build version retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VersionResponse'
+
+  /api/weather:
+    get:
+      tags:
+        - Public Widgets
+      summary: Get weather data
+      description: |
+        Proxies Open-Meteo API for weather data with server-side caching and response transformation.
+        Returns current conditions and hourly forecast for next 24 hours.
+
+        **Caching:** 15 minutes (900 seconds)
+      operationId: getWeather
+      responses:
+        '200':
+          description: Weather data retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WeatherResponse'
+
+  /api/spotify/authorize:
+    get:
+      tags:
+        - OAuth
+      summary: Initiate Spotify OAuth flow
+      description: Redirects to Spotify authorization page
+      operationId: spotifyAuthorize
+      responses:
+        '302':
+          description: Redirect to Spotify authorization
+
+  /api/spotify/callback:
+    get:
+      tags:
+        - OAuth
+      summary: Spotify OAuth callback
+      description: Handles OAuth callback and exchanges code for tokens
+      operationId: spotifyCallback
+      parameters:
+        - name: code
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Authorization code from Spotify
+      responses:
+        '302':
+          description: Redirect to app after successful auth
+        '400':
+          description: Invalid or missing authorization code
+
+  /api/admin/settings:
+    get:
+      tags:
+        - Admin
+      summary: Get system settings
+      description: |
+        Returns all system configuration settings.
+
+        **Status:** Incomplete (admin portal in development)
+        **Authentication:** Requires JWT token
+      operationId: getAdminSettings
+      security:
+        - jwtAuth: []
+      responses:
+        '200':
+          description: Settings retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+    put:
+      tags:
+        - Admin
+      summary: Update system settings
+      description: |
+        Updates system configuration settings.
+
+        **Status:** Incomplete (admin portal in development)
+        **Authentication:** Requires JWT token
+      operationId: updateAdminSettings
+      security:
+        - jwtAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200':
+          description: Settings updated
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /api/admin/mirror/status:
+    get:
+      tags:
+        - Admin
+      summary: Get mirror system status
+      description: |
+        Returns system health metrics (uptime, memory, CPU).
+
+        **Status:** Incomplete (admin portal in development)
+        **Authentication:** Requires JWT token
+      operationId: getAdminMirrorStatus
+      security:
+        - jwtAuth: []
+      responses:
+        '200':
+          description: Status retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemStatusResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /api/admin/mirror/refresh:
+    post:
+      tags:
+        - Admin
+      summary: Force mirror refresh
+      description: |
+        Triggers an immediate refresh of the mirror display.
+
+        **Status:** Incomplete (admin portal in development)
+        **Authentication:** Requires JWT token
+      operationId: postAdminMirrorRefresh
+      security:
+        - jwtAuth: []
+      responses:
+        '200':
+          description: Refresh triggered
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /api/admin/widgets:
+    get:
+      tags:
+        - Admin
+      summary: Get widget configurations
+      description: |
+        Returns configuration for all widgets.
+
+        **Status:** Incomplete (admin portal in development)
+        **Authentication:** Requires JWT token
+      operationId: getAdminWidgets
+      security:
+        - jwtAuth: []
+      responses:
+        '200':
+          description: Widget configs retrieved
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+    put:
+      tags:
+        - Admin
+      summary: Update widget configurations
+      description: |
+        Updates widget display settings and ordering.
+
+        **Status:** Incomplete (admin portal in development)
+        **Authentication:** Requires JWT token
+      operationId: updateAdminWidgets
+      security:
+        - jwtAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                type: object
+      responses:
+        '200':
+          description: Widget configs updated
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+components:
+  securitySchemes:
+    jwtAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token from NextAuth (admin routes only)
+
+  responses:
+    UnauthorizedError:
+      description: Authentication required or token invalid
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+  schemas:
+    CalendarResponse:
+      type: object
+      required:
+        - todayEvents
+        - tomorrowEvents
+        - upcomingEvents
+        - lastUpdated
+      properties:
+        todayEvents:
+          type: array
+          items:
+            $ref: '#/components/schemas/CalendarEvent'
+        tomorrowEvents:
+          type: array
+          items:
+            $ref: '#/components/schemas/CalendarEvent'
+        upcomingEvents:
+          type: array
+          description: Next 7 days, max 5 events
+          items:
+            $ref: '#/components/schemas/CalendarEvent'
+        lastUpdated:
+          type: string
+          format: date-time
+          example: '2026-01-01T12:00:00.000Z'
+
+    CalendarEvent:
+      type: object
+      required:
+        - id
+        - title
+        - start
+        - end
+        - allDay
+        - calendar
+      properties:
+        id:
+          type: string
+          example: ABC123
+        title:
+          type: string
+          example: Team Meeting
+        start:
+          type: string
+          format: date-time
+          example: '2026-01-01T14:00:00.000Z'
+        end:
+          type: string
+          format: date-time
+          example: '2026-01-01T15:00:00.000Z'
+        allDay:
+          type: boolean
+          example: false
+        location:
+          type: string
+          example: Conference Room A
+        description:
+          type: string
+        calendar:
+          type: string
+          enum: [primary, secondary]
+          example: primary
+
+    CommuteResponse:
+      type: object
+      required:
+        - commutes
+        - isWorkdayMorning
+        - lastUpdated
+      properties:
+        commutes:
+          type: array
+          items:
+            $ref: '#/components/schemas/Commute'
+        isWorkdayMorning:
+          type: boolean
+          description: True if Mon-Fri and before 9 AM
+          example: true
+        lastUpdated:
+          type: string
+          format: date-time
+
+    Commute:
+      type: object
+      required:
+        - name
+        - departureTime
+        - travelDuration
+        - arrivalTime
+        - trafficDelay
+      properties:
+        name:
+          type: string
+          example: Jack
+        departureTime:
+          type: string
+          example: '7:30 AM'
+        travelDuration:
+          type: number
+          description: Minutes
+          example: 25
+        arrivalTime:
+          type: string
+          example: '8:00 AM'
+        trafficDelay:
+          type: number
+          description: Additional minutes due to traffic
+          example: 5
+
+    ConfigVersionResponse:
+      type: object
+      required:
+        - version
+        - updatedAt
+      properties:
+        version:
+          type: integer
+          example: 5
+        updatedAt:
+          type: string
+          format: date-time
+
+    FeastDayResponse:
+      type: object
+      required:
+        - feastDay
+        - season
+        - color
+        - rank
+        - date
+      properties:
+        feastDay:
+          type: string
+          example: Solemnity of Mary, Mother of God
+        season:
+          type: string
+          example: Christmas
+        color:
+          type: string
+          enum: [white, red, green, purple, rose, black]
+          example: white
+        rank:
+          type: string
+          example: SOLEMNITY
+        date:
+          type: string
+          format: date
+          example: '2026-01-01'
+
+    NewsResponse:
+      type: object
+      required:
+        - articles
+        - lastUpdated
+      properties:
+        articles:
+          type: array
+          items:
+            $ref: '#/components/schemas/NewsArticle'
+        lastUpdated:
+          type: string
+          format: date-time
+
+    NewsArticle:
+      type: object
+      required:
+        - title
+        - description
+        - link
+        - publishedAt
+      properties:
+        title:
+          type: string
+          example: Breaking News Title
+        description:
+          type: string
+          example: Brief article summary...
+        link:
+          type: string
+          format: uri
+          example: https://example.com/article
+        publishedAt:
+          type: string
+          format: date-time
+        source:
+          type: string
+          example: NY Times
+
+    SpotifyResponse:
+      type: object
+      required:
+        - playing
+      properties:
+        playing:
+          type: boolean
+        trackName:
+          type: string
+          example: Song Title
+        artistName:
+          type: string
+          example: Artist Name
+        albumName:
+          type: string
+          example: Album Name
+        albumArt:
+          type: string
+          format: uri
+          example: https://i.scdn.co/image/...
+        progress:
+          type: number
+          description: Milliseconds into track
+        duration:
+          type: number
+          description: Total track duration in milliseconds
+        isPodcast:
+          type: boolean
+        showName:
+          type: string
+          description: Podcast show name (if isPodcast)
+
+    SummaryResponse:
+      type: object
+      required:
+        - greeting
+        - summary
+        - generatedAt
+      properties:
+        greeting:
+          type: string
+          example: Good morning
+        summary:
+          type: string
+          description: AI-generated daily briefing
+          example: Today looks partly cloudy with a high of 45°F. You have 2 meetings scheduled...
+        generatedAt:
+          type: string
+          format: date-time
+        isTemplate:
+          type: boolean
+          description: True if fallback template was used (AI unavailable)
+
+    VersionResponse:
+      type: object
+      required:
+        - buildTime
+        - version
+      properties:
+        buildTime:
+          type: number
+          description: Unix timestamp of build
+          example: 1735686000000
+        version:
+          type: string
+          example: '0.2.0'
+        environment:
+          type: string
+          enum: [development, production]
+
+    WeatherResponse:
+      type: object
+      required:
+        - current
+        - hourly
+        - location
+        - lastUpdated
+      properties:
+        current:
+          $ref: '#/components/schemas/CurrentWeather'
+        hourly:
+          type: array
+          description: Next 24 hours
+          items:
+            $ref: '#/components/schemas/HourlyForecast'
+        daily:
+          type: array
+          description: Next 7 days
+          items:
+            $ref: '#/components/schemas/DailyForecast'
+        location:
+          type: string
+          example: Fort Wayne, IN
+        lastUpdated:
+          type: string
+          format: date-time
+
+    CurrentWeather:
+      type: object
+      required:
+        - temperature
+        - feelsLike
+        - humidity
+        - windSpeed
+        - weatherCode
+        - isDay
+      properties:
+        temperature:
+          type: number
+          description: Fahrenheit
+          example: 45
+        feelsLike:
+          type: number
+          description: Feels like temperature in Fahrenheit
+          example: 42
+        humidity:
+          type: number
+          description: Percentage
+          example: 65
+        windSpeed:
+          type: number
+          description: Miles per hour
+          example: 8
+        weatherCode:
+          type: integer
+          description: WMO weather code
+          example: 2
+        isDay:
+          type: boolean
+          example: true
+
+    HourlyForecast:
+      type: object
+      required:
+        - time
+        - temperature
+        - weatherCode
+      properties:
+        time:
+          type: string
+          format: date-time
+        temperature:
+          type: number
+        weatherCode:
+          type: integer
+        precipitation:
+          type: number
+          description: Probability percentage
+
+    DailyForecast:
+      type: object
+      required:
+        - date
+        - temperatureHigh
+        - temperatureLow
+        - weatherCode
+      properties:
+        date:
+          type: string
+          format: date
+        temperatureHigh:
+          type: number
+        temperatureLow:
+          type: number
+        weatherCode:
+          type: integer
+        precipitation:
+          type: number
+
+    SystemStatusResponse:
+      type: object
+      required:
+        - online
+        - uptime
+        - lastPing
+      properties:
+        online:
+          type: boolean
+        uptime:
+          type: integer
+          description: Seconds since boot
+        lastPing:
+          type: string
+          format: date-time
+        memoryUsage:
+          type: integer
+          description: Percentage
+        cpuUsage:
+          type: integer
+          description: Percentage
+
+    ErrorResponse:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: string
+          example: Error message description
+        details:
+          type: string
