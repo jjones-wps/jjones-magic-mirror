@@ -209,7 +209,7 @@ Successfully resolved 7 deployment issues to achieve stable CI/CD:
 
 **Result**: Stable deployments with 296 tests passing consistently
 
-See `DEPLOYMENT_TROUBLESHOOTING.md` for detailed solutions and prevention strategies.
+See `TROUBLESHOOTING.md` for detailed solutions and prevention strategies.
 
 ---
 

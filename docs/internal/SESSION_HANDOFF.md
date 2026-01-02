@@ -56,9 +56,9 @@ Successfully resolved 7 sequential build/test failures:
 
 ### Documentation Updates
 - ✅ Updated `CLAUDE.md` with testing section and recent session history
-- ✅ Created `DEPLOYMENT_TROUBLESHOOTING.md` with detailed solutions
-- ✅ Updated `TESTING_SUMMARY.md` with CI/CD improvements
-- ✅ Created this `SESSION_HANDOFF.md` for future continuations
+- ✅ Created `docs/TROUBLESHOOTING.md` with detailed solutions
+- ✅ Updated `docs/TESTING.md` with CI/CD improvements
+- ✅ Created this `docs/internal/SESSION_HANDOFF.md` for future continuations
 
 ---
 
@@ -82,10 +82,10 @@ Successfully resolved 7 sequential build/test failures:
 ### Documentation
 | File | Status | Purpose |
 |------|--------|---------|
-| `DEPLOYMENT_TROUBLESHOOTING.md` | ✅ Created | Comprehensive troubleshooting guide |
+| `docs/TROUBLESHOOTING.md` | ✅ Created | Comprehensive troubleshooting guide |
 | `CLAUDE.md` | ✅ Updated | Added testing and recent session info |
-| `TESTING_SUMMARY.md` | ✅ Updated | Added CI/CD improvements section |
-| `SESSION_HANDOFF.md` | ✅ Created | This document |
+| `docs/TESTING.md` | ✅ Updated | Added CI/CD improvements section |
+| `docs/internal/SESSION_HANDOFF.md` | ✅ Created | This document |
 
 ---
 
@@ -165,10 +165,10 @@ Push to main → Tests (1m30s-2m) → Build (1m-1m30s) → Deploy (10-30s) → H
 
 ### Documentation
 - `CLAUDE.md` - Main project documentation
-- `TESTING_SUMMARY.md` - Test coverage details
-- `DEPLOYMENT_TROUBLESHOOTING.md` - Deployment solutions
-- `SESSION_HANDOFF.md` - This document
-- `docs/DESIGN_SYSTEM.md` - UI/UX guidelines
+- `docs/TESTING.md` - Test coverage details
+- `docs/TROUBLESHOOTING.md` - Deployment solutions
+- `docs/internal/SESSION_HANDOFF.md` - This document
+- `docs/design/DESIGN_SYSTEM.md` - UI/UX guidelines
 
 ### Core Features (95-100% Tested)
 **Widgets**:
@@ -258,7 +258,7 @@ gh run view RUN_ID --log
 
 ### If Continuing Development
 1. Review `CLAUDE.md` for project overview
-2. Check `TESTING_SUMMARY.md` for current coverage
+2. Check `docs/TESTING.md` for current coverage
 3. Run `npm test` locally before committing
 4. Push to main triggers automatic deployment
 
@@ -269,7 +269,7 @@ gh run view RUN_ID --log
 4. Update `jest.config.ts` to include admin files in coverage
 
 ### If Debugging Deployment Issues
-1. Check `DEPLOYMENT_TROUBLESHOOTING.md` first
+1. Check `docs/TROUBLESHOOTING.md` first
 2. View GitHub Actions logs: https://github.com/jjones-wps/jjones-magic-mirror/actions
 3. SSH to Pi: `ssh jjones@192.168.1.213`
 4. Check pm2 logs: `pm2 logs magic-mirror`

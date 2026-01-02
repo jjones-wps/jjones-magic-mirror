@@ -286,11 +286,11 @@ npm run test:coverage       # With coverage report
 npm run test:ci             # CI mode (used in GitHub Actions)
 ```
 
-See `TESTING_SUMMARY.md` for detailed coverage breakdown.
+See `docs/TESTING.md` for detailed coverage breakdown.
 
 ## Common Deployment Issues
 
-The project has a robust CI/CD pipeline, but certain issues can occur. See `DEPLOYMENT_TROUBLESHOOTING.md` for detailed solutions to:
+The project has a robust CI/CD pipeline, but certain issues can occur. See `docs/TROUBLESHOOTING.md` for detailed solutions to:
 
 1. **Test failures due to locale differences** (date formatting)
 2. **Jest ES module imports** (`next/jest.js` extension required)

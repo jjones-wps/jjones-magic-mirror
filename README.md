@@ -15,6 +15,19 @@ A smart magic mirror display built with Next.js, designed for a 1080x2560 portra
 - **Catholic Feast Days** - Liturgical calendar via romcal
 - **Commute Times** - Traffic-aware routing via TomTom (workday mornings)
 
+## Documentation
+
+Comprehensive documentation is available in the [`docs/`](docs/) directory:
+
+- **[Documentation Hub](docs/README.md)** - Start here for guided navigation
+- **[API Documentation](docs/API_DOCUMENTATION.md)** - Complete API reference
+- **[Architecture](docs/ARCHITECTURE.md)** - System design and diagrams
+- **[Testing Guide](docs/TESTING.md)** - Test coverage and patterns
+- **[Troubleshooting](docs/TROUBLESHOOTING.md)** - Deployment issue solutions
+- **[Design System](docs/design/DESIGN_SYSTEM.md)** - UI/UX guidelines
+
+See [CLAUDE.md](CLAUDE.md) for AI-assisted development guidance.
+
 ## Tech Stack
 
 - **Framework**: Next.js 16 with App Router

@@ -992,9 +992,9 @@ import Image from 'next/image';
 
 - **Codebase:** [GitHub Repository](https://github.com/jjones-wps/jjones-magic-mirror)
 - **API Documentation:** [API_DOCUMENTATION.md](./API_DOCUMENTATION.md)
-- **Testing Guide:** [TESTING_SUMMARY.md](./TESTING_SUMMARY.md)
-- **Deployment Guide:** [DEPLOYMENT_TROUBLESHOOTING.md](./DEPLOYMENT_TROUBLESHOOTING.md)
-- **Design System:** [docs/DESIGN_SYSTEM.md](./docs/DESIGN_SYSTEM.md)
+- **Testing Guide:** [TESTING.md](./TESTING.md)
+- **Deployment Guide:** [TROUBLESHOOTING.md](./TROUBLESHOOTING.md)
+- **Design System:** [design/DESIGN_SYSTEM.md](./design/DESIGN_SYSTEM.md)
 
 ---
 

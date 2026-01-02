@@ -274,18 +274,18 @@ npm run test:ci  # Runs on every push
 | --------------------- | ------------ | ----------------------------------------- | ----- |
 | README.md             | ✅ Excellent | Complete setup, features, deployment      | 153   |
 | CLAUDE.md             | ✅ Excellent | Detailed project guidance for AI          | 290   |
-| TESTING_SUMMARY.md    | ✅ Excellent | Comprehensive test coverage details       | 220   |
-| DEPLOYMENT_TROUBLESHOOTING.md | ✅ Excellent | CI/CD issue solutions | 600+ |
-| SESSION_HANDOFF.md    | ✅ Excellent | Context preservation for continuations    | 350   |
-| docs/DESIGN_SYSTEM.md | ✅ Excellent | Comprehensive design principles PRD       | 441   |
-| PROJECT_AUDIT.md      | ✅ Current   | This document (updated post-testing)      | 567   |
+| docs/TESTING.md       | ✅ Excellent | Comprehensive test coverage details       | 220   |
+| docs/TROUBLESHOOTING.md | ✅ Excellent | CI/CD issue solutions | 480+ |
+| docs/internal/SESSION_HANDOFF.md | ✅ Excellent | Context preservation for continuations | 310 |
+| docs/design/DESIGN_SYSTEM.md | ✅ Excellent | Comprehensive design principles PRD | 440 |
+| docs/internal/PROJECT_AUDIT.md | ✅ Current   | This document (updated post-testing)      | 567   |
 
 **Documentation Strengths:**
 
 - README has deploy badge, clear setup instructions
 - CLAUDE.md provides excellent context for AI-assisted development
-- TESTING_SUMMARY.md documents all 296 tests and coverage
-- DEPLOYMENT_TROUBLESHOOTING.md has solutions to 7 common CI/CD issues
+- docs/TESTING.md documents all 296 tests and coverage
+- docs/TROUBLESHOOTING.md has solutions to 7 common CI/CD issues
 - Design system thoroughly documented with "Quiet Presence" philosophy
 - Session handoff ensures continuity across context resets
 
@@ -457,7 +457,7 @@ Jobs:
 **Recent Improvements:**
 
 - Added `postinstall` hook for Prisma client generation
-- Resolved 7 deployment issues (documented in DEPLOYMENT_TROUBLESHOOTING.md)
+- Resolved 7 deployment issues (documented in docs/TROUBLESHOOTING.md)
 - Achieved stable deployments: 10+ consecutive successful deploys
 
 **Optional Enhancements:**
