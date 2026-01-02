@@ -17,14 +17,11 @@ A smart magic mirror display built with Next.js, designed for a 1080x2560 portra
 
 ## Screenshots
 
-<!-- TODO: Add screenshots once captured from Raspberry Pi -->
-<!-- See public/screenshots/README.md for capture instructions -->
-
 ### Full Mirror Display
 
-<!-- ![Magic Mirror full display showing all widgets in portrait mode](public/screenshots/full-mirror-display.png) -->
+![Magic Mirror full display showing all widgets in portrait mode](public/screenshots/full-mirror-display.png)
 
-**Coming soon:** Full 1080x2560 portrait display showing all widgets in action.
+*Full 1080x2560 portrait display showing all widgets in action*
 
 ### Feature Highlights
 
@@ -33,7 +30,7 @@ A smart magic mirror display built with Next.js, designed for a 1080x2560 portra
 <td width="33%">
 
 **Clock Widget**
-<!-- ![Clock widget with time, date, and feast day](public/screenshots/clock-widget.png) -->
+![Clock widget with time, date, and feast day](public/screenshots/clock-widget.png)
 
 *Animated digit transitions with "Waterfall of Time" effect*
 
@@ -41,15 +38,15 @@ A smart magic mirror display built with Next.js, designed for a 1080x2560 portra
 <td width="33%">
 
 **Weather Widget**
-<!-- ![Weather widget showing current conditions and hourly forecast](public/screenshots/weather-widget.png) -->
+![Weather widget showing current conditions and 7-day forecast](public/screenshots/weather-widget.png)
 
-*Current conditions and 24-hour forecast*
+*Current conditions and 7-day forecast*
 
 </td>
 <td width="33%">
 
 **Calendar Widget**
-<!-- ![Calendar widget displaying today's and tomorrow's events](public/screenshots/calendar-widget.png) -->
+![Calendar widget displaying today's and tomorrow's events](public/screenshots/calendar-widget.png)
 
 *Today's events, tomorrow's preview*
 
@@ -59,9 +56,9 @@ A smart magic mirror display built with Next.js, designed for a 1080x2560 portra
 <td width="33%">
 
 **AI Summary**
-<!-- ![AI daily briefing with personalized greeting](public/screenshots/ai-summary-widget.png) -->
+![AI daily briefing with personalized greeting](public/screenshots/ai-summary-widget.png)
 
-*Personalized morning briefing*
+*Personalized daily briefing*
 
 </td>
 <td width="33%">
@@ -75,9 +72,30 @@ A smart magic mirror display built with Next.js, designed for a 1080x2560 portra
 <td width="33%">
 
 **Commute Times**
-<!-- ![Commute widget with traffic-aware routing](public/screenshots/commute-widget.png) -->
+![Commute widget with traffic-aware routing](public/screenshots/commute-widget.png)
 
 *Traffic-aware departure times*
+
+</td>
+</tr>
+<tr>
+<td width="33%">
+
+**News Headlines**
+![News widget showing latest headlines](public/screenshots/news-widget.png)
+
+*Latest headlines from RSS feeds*
+
+</td>
+<td width="33%">
+
+**Spotify Now Playing**
+<!-- ![Spotify widget showing currently playing track](public/screenshots/spotify-widget.png) -->
+
+*Real-time track display (when music is playing)*
+
+</td>
+<td width="33%">
 
 </td>
 </tr>
