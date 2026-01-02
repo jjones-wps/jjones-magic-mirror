@@ -49,3 +49,6 @@ next-env.d.ts
 # Database files
 *.db
 *.db-journal
+
+# Development workspace
+/dev/
