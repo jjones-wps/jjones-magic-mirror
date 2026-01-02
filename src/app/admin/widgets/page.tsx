@@ -1,7 +1,6 @@
-// @ts-nocheck
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 interface Widget {
   id: string;
@@ -30,8 +29,7 @@ export default function WidgetsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const hasChanges = useRef(false);
-  const [, forceUpdate] = useState({});
+  const [hasChanges, setHasChanges] = useState(false);
 
   const fetchWidgets = useCallback(async () => {
     try {
@@ -54,8 +52,7 @@ export default function WidgetsPage() {
 
   const toggleWidget = (id: string) => {
     setWidgets((prev) => prev.map((w) => (w.id === id ? { ...w, enabled: !w.enabled } : w)));
-    hasChanges.current = true;
-    forceUpdate({});
+    setHasChanges(true);
   };
 
   const handleSave = async () => {
@@ -68,8 +65,7 @@ export default function WidgetsPage() {
       });
 
       if (changedWidgets.length === 0) {
-        hasChanges.current = false;
-        forceUpdate({});
+        setHasChanges(false);
         setSaving(false);
         return;
       }
@@ -89,8 +85,7 @@ export default function WidgetsPage() {
 
       // Refetch to get updated data
       await fetchWidgets();
-      hasChanges.current = false;
-      forceUpdate({});
+      setHasChanges(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save');
     } finally {
@@ -100,8 +95,7 @@ export default function WidgetsPage() {
 
   const handleDiscard = () => {
     setWidgets(originalWidgets);
-    hasChanges.current = false;
-    forceUpdate({});
+    setHasChanges(false);
   };
 
   if (loading) {
@@ -173,7 +167,7 @@ export default function WidgetsPage() {
           </p>
         </div>
 
-        {hasChanges.current && (
+        {hasChanges && (
           <button
             className="admin-btn admin-btn-primary"
             onClick={handleSave}
@@ -336,7 +330,7 @@ export default function WidgetsPage() {
       </div>
 
       {/* Unsaved Changes Bar */}
-      {hasChanges.current && (
+      {hasChanges && (
         <div
           style={{
             position: 'fixed',
