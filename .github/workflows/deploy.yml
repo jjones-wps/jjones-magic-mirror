@@ -30,6 +30,11 @@ jobs:
           cd /home/jjones/magic-mirror
           npm ci
 
+      - name: Security audit
+        run: |
+          cd /home/jjones/magic-mirror
+          npm audit --production --audit-level=high
+
       - name: Run test suite
         run: |
           cd /home/jjones/magic-mirror
