@@ -205,9 +205,9 @@ describe('Spotify Widget', () => {
       expect(global.fetch).toHaveBeenCalledTimes(1);
     });
 
-    // Advance 10 seconds (refresh interval)
+    // Advance 15 seconds (refresh interval)
     await act(async () => {
-      jest.advanceTimersByTime(10000);
+      jest.advanceTimersByTime(15000);
     });
 
     // Should have fetched again
