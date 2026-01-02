@@ -23,7 +23,7 @@ interface SpotifyData {
 // ============================================
 // CONFIGURATION
 // ============================================
-const REFRESH_INTERVAL = 10 * 1000; // 10 seconds when playing
+const REFRESH_INTERVAL = 15 * 1000; // 15 seconds - balanced for Pi performance
 
 // ============================================
 // ANIMATED BARS COMPONENT
