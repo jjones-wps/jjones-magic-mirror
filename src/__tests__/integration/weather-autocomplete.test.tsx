@@ -255,8 +255,8 @@ describe('Weather Settings - Address Autocomplete Integration', () => {
         );
       });
 
-      // Verify success message
-      expect(screen.getByText('Weather settings saved successfully')).toBeInTheDocument();
+      // Verify success toast message
+      expect(screen.getByText('Weather settings updated successfully')).toBeInTheDocument();
     });
 
     it('should reset to original values', async () => {
