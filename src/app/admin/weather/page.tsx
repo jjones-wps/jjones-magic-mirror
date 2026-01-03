@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import LocationAutocomplete from '@/components/admin/LocationAutocomplete';
 
 interface WeatherSettings {
   latitude: string;
@@ -168,7 +169,7 @@ export default function WeatherSettingsPage() {
           padding: 'var(--space-xl)',
         }}
       >
-        {/* Location */}
+        {/* Location Search */}
         <div style={{ marginBottom: 'var(--space-lg)' }}>
           <label
             htmlFor="location"
@@ -180,23 +181,19 @@ export default function WeatherSettingsPage() {
               marginBottom: 'var(--space-xs)',
             }}
           >
-            Location Name
+            Location
           </label>
-          <input
-            id="location"
-            type="text"
+          <LocationAutocomplete
             value={settings.location}
-            onChange={(e) => setSettings((prev) => ({ ...prev, location: e.target.value }))}
-            placeholder="Fort Wayne, IN"
-            style={{
-              width: '100%',
-              padding: 'var(--space-sm)',
-              background: 'var(--admin-input-bg)',
-              border: '1px solid var(--admin-border)',
-              borderRadius: 'var(--radius-md)',
-              color: 'var(--admin-text-primary)',
-              fontSize: 'var(--font-size-base)',
+            onSelect={(result) => {
+              setSettings((prev) => ({
+                ...prev,
+                location: result.address,
+                latitude: result.lat.toString(),
+                longitude: result.lon.toString(),
+              }));
             }}
+            placeholder="Search for a city or address..."
           />
           <p
             style={{
@@ -205,7 +202,7 @@ export default function WeatherSettingsPage() {
               marginTop: 'var(--space-xs)',
             }}
           >
-            Display name for the weather location
+            Search for a city or address to auto-fill coordinates
           </p>
         </div>
 
@@ -235,7 +232,7 @@ export default function WeatherSettingsPage() {
               id="latitude"
               type="text"
               value={settings.latitude}
-              onChange={(e) => setSettings((prev) => ({ ...prev, latitude: e.target.value }))}
+              readOnly
               placeholder="41.0793"
               style={{
                 width: '100%',
@@ -243,8 +240,9 @@ export default function WeatherSettingsPage() {
                 background: 'var(--admin-input-bg)',
                 border: '1px solid var(--admin-border)',
                 borderRadius: 'var(--radius-md)',
-                color: 'var(--admin-text-primary)',
+                color: 'var(--admin-text-secondary)',
                 fontSize: 'var(--font-size-base)',
+                cursor: 'not-allowed',
               }}
             />
             <p
@@ -275,7 +273,7 @@ export default function WeatherSettingsPage() {
               id="longitude"
               type="text"
               value={settings.longitude}
-              onChange={(e) => setSettings((prev) => ({ ...prev, longitude: e.target.value }))}
+              readOnly
               placeholder="-85.1394"
               style={{
                 width: '100%',
@@ -283,8 +281,9 @@ export default function WeatherSettingsPage() {
                 background: 'var(--admin-input-bg)',
                 border: '1px solid var(--admin-border)',
                 borderRadius: 'var(--radius-md)',
-                color: 'var(--admin-text-primary)',
+                color: 'var(--admin-text-secondary)',
                 fontSize: 'var(--font-size-base)',
+                cursor: 'not-allowed',
               }}
             />
             <p
