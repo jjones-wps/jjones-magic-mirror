@@ -2,6 +2,9 @@
 
 import { useState, useEffect } from 'react';
 
+// Color palette for rotating calendar colors
+const COLOR_PALETTE = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899'];
+
 interface CalendarFeed {
   id: string;
   name: string;
@@ -22,7 +25,7 @@ export default function CalendarSettingsPage() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [newFeedName, setNewFeedName] = useState('');
   const [newFeedUrl, setNewFeedUrl] = useState('');
-  const [newFeedColor, setNewFeedColor] = useState('#3B82F6');
+  const [newFeedColor, setNewFeedColor] = useState(() => COLOR_PALETTE[0]);
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState<{
     valid: boolean;
@@ -32,10 +35,16 @@ export default function CalendarSettingsPage() {
   const [saving, setSaving] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [daysAhead, setDaysAhead] = useState(7);
+  const [inlineError, setInlineError] = useState<string | null>(null);
 
   useEffect(() => {
     fetchFeeds();
   }, []);
+
+  // Get next color from palette based on number of feeds
+  const getNextColor = () => {
+    return COLOR_PALETTE[feeds.length % COLOR_PALETTE.length];
+  };
 
   const fetchFeeds = async () => {
     try {
@@ -108,15 +117,16 @@ export default function CalendarSettingsPage() {
       if (!response.ok) throw new Error('Failed to add calendar feed');
 
       const data = await response.json();
-      setFeeds([...feeds, data.feed]);
+      setFeeds((prevFeeds) => [...prevFeeds, data.feed]);
       setNewFeedName('');
       setNewFeedUrl('');
-      setNewFeedColor('#3B82F6');
+      setNewFeedColor(COLOR_PALETTE[0]);
       setTestResult(null);
       setShowAddModal(false);
     } catch (err) {
       console.error('Error adding feed:', err);
-      alert(err instanceof Error ? err.message : 'Failed to add calendar feed');
+      setInlineError(err instanceof Error ? err.message : 'Failed to add calendar feed');
+      setTimeout(() => setInlineError(null), 5000); // Clear after 5 seconds
     } finally {
       setSaving(false);
     }
@@ -132,10 +142,11 @@ export default function CalendarSettingsPage() {
 
       if (!response.ok) throw new Error('Failed to remove calendar feed');
 
-      setFeeds(feeds.filter((f) => f.id !== id));
+      setFeeds((prevFeeds) => prevFeeds.filter((f) => f.id !== id));
     } catch (err) {
       console.error('Error removing feed:', err);
-      alert(err instanceof Error ? err.message : 'Failed to remove calendar feed');
+      setInlineError(err instanceof Error ? err.message : 'Failed to remove calendar feed');
+      setTimeout(() => setInlineError(null), 5000); // Clear after 5 seconds
     }
   };
 
@@ -160,7 +171,8 @@ export default function CalendarSettingsPage() {
       setHasUnsavedChanges(false);
     } catch (err) {
       console.error('Error saving changes:', err);
-      alert(err instanceof Error ? err.message : 'Failed to save changes');
+      setInlineError(err instanceof Error ? err.message : 'Failed to save changes');
+      setTimeout(() => setInlineError(null), 5000); // Clear after 5 seconds
     } finally {
       setSaving(false);
     }
@@ -174,6 +186,8 @@ export default function CalendarSettingsPage() {
   if (loading) {
     return (
       <div
+        role="status"
+        aria-live="polite"
         style={{
           display: 'flex',
           alignItems: 'center',
@@ -229,6 +243,22 @@ export default function CalendarSettingsPage() {
               {saving ? 'Saving...' : 'Save Changes'}
             </button>
           </div>
+        </div>
+      )}
+
+      {/* Inline Error Display */}
+      {inlineError && (
+        <div
+          className="admin-animate-in"
+          style={{
+            padding: 'var(--space-md)',
+            background: 'rgba(239, 68, 68, 0.1)',
+            border: '1px solid var(--admin-error)',
+            borderRadius: 'var(--radius-md)',
+            color: 'var(--admin-error)',
+          }}
+        >
+          {inlineError}
         </div>
       )}
 
@@ -341,7 +371,13 @@ export default function CalendarSettingsPage() {
               {feeds.length} feed{feeds.length !== 1 ? 's' : ''} configured
             </p>
           </div>
-          <button className="admin-btn admin-btn-secondary" onClick={() => setShowAddModal(true)}>
+          <button
+            className="admin-btn admin-btn-secondary"
+            onClick={() => {
+              setNewFeedColor(getNextColor());
+              setShowAddModal(true);
+            }}
+          >
             + Add Feed
           </button>
         </div>
@@ -361,7 +397,7 @@ export default function CalendarSettingsPage() {
             feeds.map((feed) => {
               const status = feed.lastError ? 'error' : feed.lastSync ? 'ok' : 'pending';
               const lastSyncText = feed.lastSync
-                ? new Date(feed.lastSync).toLocaleString()
+                ? new Date(feed.lastSync).toLocaleString('en-US')
                 : 'Never';
 
               return (
@@ -613,7 +649,7 @@ export default function CalendarSettingsPage() {
                   setShowAddModal(false);
                   setNewFeedName('');
                   setNewFeedUrl('');
-                  setNewFeedColor('#3B82F6');
+                  setNewFeedColor(COLOR_PALETTE[0]);
                   setTestResult(null);
                 }}
                 disabled={saving}
