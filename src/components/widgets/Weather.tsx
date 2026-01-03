@@ -255,6 +255,24 @@ export default function Weather() {
               {weather.current.humidity}% humidity
             </span>
           </motion.div>
+
+          {/* Sunrise/Sunset */}
+          {weather.daily && weather.daily.length > 0 && weather.daily[0].sunrise && (
+            <motion.div variants={staggerItem} className="mt-2 flex items-center gap-4">
+              <span
+                className="text-mirror-sm font-extralight font-body"
+                style={{ opacity: opacity.tertiary }}
+              >
+                ↑ {format(new Date(weather.daily[0].sunrise), 'h:mm a')}
+              </span>
+              <span
+                className="text-mirror-sm font-extralight font-body"
+                style={{ opacity: opacity.tertiary }}
+              >
+                ↓ {format(new Date(weather.daily[0].sunset), 'h:mm a')}
+              </span>
+            </motion.div>
+          )}
         </div>
       </motion.div>
 

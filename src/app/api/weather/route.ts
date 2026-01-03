@@ -87,6 +87,8 @@ export async function GET() {
         tempLow: Math.round(data.daily.temperature_2m_min[i]),
         weatherCode: data.daily.weather_code[i],
         precipitationProbability: data.daily.precipitation_probability_max[i],
+        sunrise: data.daily.sunrise[i],
+        sunset: data.daily.sunset[i],
       })),
       location,
       lastUpdated: new Date().toISOString(),

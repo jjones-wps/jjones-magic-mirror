@@ -33,6 +33,8 @@ const mockOpenMeteoResponse = {
     temperature_2m_min: [55.1, 54.3, 50.2],
     weather_code: [2, 3, 61],
     precipitation_probability_max: [10, 20, 80],
+    sunrise: ['2024-01-15T13:05:00Z', '2024-01-16T13:06:00Z', '2024-01-17T13:07:00Z'],
+    sunset: ['2024-01-15T22:45:00Z', '2024-01-16T22:46:00Z', '2024-01-17T22:47:00Z'],
   },
 };
 
@@ -81,6 +83,8 @@ describe('GET /api/weather', () => {
       tempLow: 55,
       weatherCode: 2,
       precipitationProbability: 10,
+      sunrise: '2024-01-15T13:05:00Z',
+      sunset: '2024-01-15T22:45:00Z',
     });
 
     expect(data.location).toBe('Fort Wayne, IN');
