@@ -56,7 +56,14 @@ export async function PUT(request: Request) {
     const { latitude, longitude, location, units } = body;
 
     // Validate required fields
-    if (!latitude || !longitude || !location || !units) {
+    if (
+      latitude === undefined ||
+      latitude === null ||
+      longitude === undefined ||
+      longitude === null ||
+      !location ||
+      !units
+    ) {
       return NextResponse.json(
         { error: 'All fields are required: latitude, longitude, location, units' },
         { status: 400 }
