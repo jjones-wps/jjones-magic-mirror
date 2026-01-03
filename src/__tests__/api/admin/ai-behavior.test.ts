@@ -6,6 +6,7 @@
 import { GET, PUT } from '@/app/api/admin/ai-behavior/route';
 import { prisma } from '@/lib/db';
 import { DEFAULT_AI_BEHAVIOR } from '@/lib/ai-behavior';
+import { invalidateAIBehaviorCache } from '@/lib/ai-behavior.server';
 
 // Mock Prisma
 jest.mock('@/lib/db', () => ({
@@ -34,6 +35,7 @@ import { auth } from '@/lib/auth/server';
 describe('GET /api/admin/ai-behavior', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    invalidateAIBehaviorCache(); // Clear cache between tests
   });
 
   it('should require authentication', async () => {
@@ -119,6 +121,7 @@ describe('GET /api/admin/ai-behavior', () => {
 describe('PUT /api/admin/ai-behavior', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    invalidateAIBehaviorCache(); // Clear cache between tests
   });
 
   it('should require authentication', async () => {
@@ -335,5 +338,193 @@ describe('PUT /api/admin/ai-behavior', () => {
 
     expect(response.status).toBe(400);
     expect(data.error).toContain('Custom instructions must be 500 characters or less');
+  });
+
+  describe('Boolean Persistence Integration Tests', () => {
+    beforeEach(() => {
+      jest.clearAllMocks();
+      invalidateAIBehaviorCache(); // Clear cache between tests
+    });
+
+    it('should persist stressAwareEnabled=true as string "true" in database', async () => {
+      (auth as jest.Mock).mockResolvedValue({ user: { id: 'test-user' } });
+      (prisma.setting.upsert as jest.Mock).mockResolvedValue({});
+      (prisma.activityLog.create as jest.Mock).mockResolvedValue({});
+      (prisma.configVersion.upsert as jest.Mock).mockResolvedValue({});
+
+      const settings = {
+        ...DEFAULT_AI_BEHAVIOR,
+        stressAwareEnabled: true,
+      };
+
+      const mockRequest = new Request('http://localhost:3000/api/admin/ai-behavior', {
+        method: 'PUT',
+        body: JSON.stringify(settings),
+      });
+
+      await PUT(mockRequest);
+
+      // Find the upsert call for stressAwareEnabled
+      const upsertCalls = (prisma.setting.upsert as jest.Mock).mock.calls;
+      const stressAwareCall = upsertCalls.find(
+        (call) => call[0].where.id === 'ai-behavior.stressAwareEnabled'
+      );
+
+      expect(stressAwareCall).toBeDefined();
+      expect(stressAwareCall[0].update.value).toBe('true');
+      expect(stressAwareCall[0].create.value).toBe('true');
+      expect(typeof stressAwareCall[0].update.value).toBe('string');
+    });
+
+    it('should persist stressAwareEnabled=false as string "false" in database', async () => {
+      (auth as jest.Mock).mockResolvedValue({ user: { id: 'test-user' } });
+      (prisma.setting.upsert as jest.Mock).mockResolvedValue({});
+      (prisma.activityLog.create as jest.Mock).mockResolvedValue({});
+      (prisma.configVersion.upsert as jest.Mock).mockResolvedValue({});
+
+      const settings = {
+        ...DEFAULT_AI_BEHAVIOR,
+        stressAwareEnabled: false,
+      };
+
+      const mockRequest = new Request('http://localhost:3000/api/admin/ai-behavior', {
+        method: 'PUT',
+        body: JSON.stringify(settings),
+      });
+
+      await PUT(mockRequest);
+
+      const upsertCalls = (prisma.setting.upsert as jest.Mock).mock.calls;
+      const stressAwareCall = upsertCalls.find(
+        (call) => call[0].where.id === 'ai-behavior.stressAwareEnabled'
+      );
+
+      expect(stressAwareCall).toBeDefined();
+      expect(stressAwareCall[0].update.value).toBe('false');
+      expect(stressAwareCall[0].create.value).toBe('false');
+      expect(typeof stressAwareCall[0].update.value).toBe('string');
+    });
+
+    it('should persist celebrationModeEnabled=true as string "true" in database', async () => {
+      (auth as jest.Mock).mockResolvedValue({ user: { id: 'test-user' } });
+      (prisma.setting.upsert as jest.Mock).mockResolvedValue({});
+      (prisma.activityLog.create as jest.Mock).mockResolvedValue({});
+      (prisma.configVersion.upsert as jest.Mock).mockResolvedValue({});
+
+      const settings = {
+        ...DEFAULT_AI_BEHAVIOR,
+        celebrationModeEnabled: true,
+      };
+
+      const mockRequest = new Request('http://localhost:3000/api/admin/ai-behavior', {
+        method: 'PUT',
+        body: JSON.stringify(settings),
+      });
+
+      await PUT(mockRequest);
+
+      const upsertCalls = (prisma.setting.upsert as jest.Mock).mock.calls;
+      const celebrationCall = upsertCalls.find(
+        (call) => call[0].where.id === 'ai-behavior.celebrationModeEnabled'
+      );
+
+      expect(celebrationCall).toBeDefined();
+      expect(celebrationCall[0].update.value).toBe('true');
+      expect(celebrationCall[0].create.value).toBe('true');
+      expect(typeof celebrationCall[0].update.value).toBe('string');
+    });
+
+    it('should persist celebrationModeEnabled=false as string "false" in database', async () => {
+      (auth as jest.Mock).mockResolvedValue({ user: { id: 'test-user' } });
+      (prisma.setting.upsert as jest.Mock).mockResolvedValue({});
+      (prisma.activityLog.create as jest.Mock).mockResolvedValue({});
+      (prisma.configVersion.upsert as jest.Mock).mockResolvedValue({});
+
+      const settings = {
+        ...DEFAULT_AI_BEHAVIOR,
+        celebrationModeEnabled: false,
+      };
+
+      const mockRequest = new Request('http://localhost:3000/api/admin/ai-behavior', {
+        method: 'PUT',
+        body: JSON.stringify(settings),
+      });
+
+      await PUT(mockRequest);
+
+      const upsertCalls = (prisma.setting.upsert as jest.Mock).mock.calls;
+      const celebrationCall = upsertCalls.find(
+        (call) => call[0].where.id === 'ai-behavior.celebrationModeEnabled'
+      );
+
+      expect(celebrationCall).toBeDefined();
+      expect(celebrationCall[0].update.value).toBe('false');
+      expect(celebrationCall[0].create.value).toBe('false');
+      expect(typeof celebrationCall[0].update.value).toBe('string');
+    });
+
+    it('should correctly parse string "true" from database as boolean true', async () => {
+      (auth as jest.Mock).mockResolvedValue({ user: { id: 'test-user' } });
+      (prisma.setting.findMany as jest.Mock).mockResolvedValue([
+        { id: 'ai-behavior.stressAwareEnabled', value: 'true' },
+        { id: 'ai-behavior.celebrationModeEnabled', value: 'true' },
+      ]);
+
+      const response = await GET();
+      const data = await response.json();
+
+      expect(data.stressAwareEnabled).toBe(true);
+      expect(data.celebrationModeEnabled).toBe(true);
+      expect(typeof data.stressAwareEnabled).toBe('boolean');
+      expect(typeof data.celebrationModeEnabled).toBe('boolean');
+    });
+
+    it('should correctly parse string "false" from database as boolean false', async () => {
+      (auth as jest.Mock).mockResolvedValue({ user: { id: 'test-user' } });
+      (prisma.setting.findMany as jest.Mock).mockResolvedValue([
+        { id: 'ai-behavior.stressAwareEnabled', value: 'false' },
+        { id: 'ai-behavior.celebrationModeEnabled', value: 'false' },
+      ]);
+
+      const response = await GET();
+      const data = await response.json();
+
+      expect(data.stressAwareEnabled).toBe(false);
+      expect(data.celebrationModeEnabled).toBe(false);
+      expect(typeof data.stressAwareEnabled).toBe('boolean');
+      expect(typeof data.celebrationModeEnabled).toBe('boolean');
+    });
+
+    it('should handle mixed boolean states (one true, one false)', async () => {
+      (auth as jest.Mock).mockResolvedValue({ user: { id: 'test-user' } });
+      (prisma.setting.findMany as jest.Mock).mockResolvedValue([
+        { id: 'ai-behavior.stressAwareEnabled', value: 'true' },
+        { id: 'ai-behavior.celebrationModeEnabled', value: 'false' },
+      ]);
+
+      const response = await GET();
+      const data = await response.json();
+
+      expect(data.stressAwareEnabled).toBe(true);
+      expect(data.celebrationModeEnabled).toBe(false);
+      expect(typeof data.stressAwareEnabled).toBe('boolean');
+      expect(typeof data.celebrationModeEnabled).toBe('boolean');
+    });
+
+    it('should use defaults when boolean settings are missing from database', async () => {
+      (auth as jest.Mock).mockResolvedValue({ user: { id: 'test-user' } });
+      (prisma.setting.findMany as jest.Mock).mockResolvedValue([
+        { id: 'ai-behavior.temperature', value: '0.7' },
+        // Boolean settings intentionally omitted
+      ]);
+
+      const response = await GET();
+      const data = await response.json();
+
+      expect(data.stressAwareEnabled).toBe(DEFAULT_AI_BEHAVIOR.stressAwareEnabled);
+      expect(data.celebrationModeEnabled).toBe(DEFAULT_AI_BEHAVIOR.celebrationModeEnabled);
+      expect(typeof data.stressAwareEnabled).toBe('boolean');
+      expect(typeof data.celebrationModeEnabled).toBe('boolean');
+    });
   });
 });

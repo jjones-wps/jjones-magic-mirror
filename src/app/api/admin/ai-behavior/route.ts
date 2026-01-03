@@ -2,7 +2,10 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth/server';
 import { prisma } from '@/lib/db';
 import type { AIBehaviorSettings } from '@/lib/ai-behavior';
-import { fetchAIBehaviorSettings } from '@/lib/ai-behavior.server';
+import {
+  fetchAIBehaviorSettings,
+  invalidateAIBehaviorCache,
+} from '@/lib/ai-behavior.server';
 
 /**
  * AI Behavior Settings API
@@ -152,6 +155,9 @@ export async function PUT(request: Request) {
         create: { id: 'current', version: 1 },
       }),
     ]);
+
+    // Invalidate cache to ensure next fetch gets fresh data
+    invalidateAIBehaviorCache();
 
     return NextResponse.json({ success: true });
   } catch (error) {
