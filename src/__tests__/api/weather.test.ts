@@ -4,6 +4,16 @@
  */
 
 import { GET } from '@/app/api/weather/route';
+import { prisma } from '@/lib/db';
+
+// Mock Prisma
+jest.mock('@/lib/db', () => ({
+  prisma: {
+    setting: {
+      findMany: jest.fn(),
+    },
+  },
+}));
 
 // Mock fetch globally
 global.fetch = jest.fn();
@@ -27,23 +37,15 @@ const mockOpenMeteoResponse = {
 };
 
 describe('GET /api/weather', () => {
-  const originalEnv = {
-    WEATHER_LAT: process.env.WEATHER_LAT,
-    WEATHER_LON: process.env.WEATHER_LON,
-    WEATHER_LOCATION: process.env.WEATHER_LOCATION,
-  };
-
   beforeEach(() => {
     jest.clearAllMocks();
-    process.env.WEATHER_LAT = '41.0793';
-    process.env.WEATHER_LON = '-85.1394';
-    process.env.WEATHER_LOCATION = 'Fort Wayne, IN';
-  });
-
-  afterEach(() => {
-    process.env.WEATHER_LAT = originalEnv.WEATHER_LAT;
-    process.env.WEATHER_LON = originalEnv.WEATHER_LON;
-    process.env.WEATHER_LOCATION = originalEnv.WEATHER_LOCATION;
+    // Default settings: Fort Wayne, IN
+    (prisma.setting.findMany as jest.Mock).mockResolvedValue([
+      { id: 'weather.latitude', category: 'weather', value: '41.0793' },
+      { id: 'weather.longitude', category: 'weather', value: '-85.1394' },
+      { id: 'weather.location', category: 'weather', value: 'Fort Wayne, IN' },
+      { id: 'weather.units', category: 'weather', value: 'fahrenheit' },
+    ]);
   });
 
   it('should fetch and transform weather data successfully', async () => {
@@ -85,8 +87,51 @@ describe('GET /api/weather', () => {
     expect(data.lastUpdated).toBeDefined();
   });
 
-  it('should use default location when env var not set', async () => {
-    delete process.env.WEATHER_LOCATION;
+  it('should use dynamic location from database settings', async () => {
+    (prisma.setting.findMany as jest.Mock).mockResolvedValue([
+      { id: 'weather.latitude', category: 'weather', value: '41.8832' },
+      { id: 'weather.longitude', category: 'weather', value: '-87.6324' },
+      { id: 'weather.location', category: 'weather', value: 'Chicago, IL' },
+      { id: 'weather.units', category: 'weather', value: 'fahrenheit' },
+    ]);
+
+    (global.fetch as jest.Mock).mockResolvedValue({
+      ok: true,
+      json: async () => mockOpenMeteoResponse,
+    });
+
+    const response = await GET();
+    const data = await response.json();
+
+    expect(data.location).toBe('Chicago, IL');
+
+    // Verify correct coordinates were used
+    const callUrl = (global.fetch as jest.Mock).mock.calls[0][0];
+    expect(callUrl).toContain('latitude=41.8832');
+    expect(callUrl).toContain('longitude=-87.6324');
+  });
+
+  it('should support celsius temperature units', async () => {
+    (prisma.setting.findMany as jest.Mock).mockResolvedValue([
+      { id: 'weather.latitude', category: 'weather', value: '48.8566' },
+      { id: 'weather.longitude', category: 'weather', value: '2.3522' },
+      { id: 'weather.location', category: 'weather', value: 'Paris, France' },
+      { id: 'weather.units', category: 'weather', value: 'celsius' },
+    ]);
+
+    (global.fetch as jest.Mock).mockResolvedValue({
+      ok: true,
+      json: async () => mockOpenMeteoResponse,
+    });
+
+    await GET();
+
+    const callUrl = (global.fetch as jest.Mock).mock.calls[0][0];
+    expect(callUrl).toContain('temperature_unit=celsius');
+  });
+
+  it('should use default location when no settings exist', async () => {
+    (prisma.setting.findMany as jest.Mock).mockResolvedValue([]);
 
     (global.fetch as jest.Mock).mockResolvedValue({
       ok: true,
@@ -97,22 +142,34 @@ describe('GET /api/weather', () => {
     const data = await response.json();
 
     expect(data.location).toBe('Fort Wayne, IN');
+
+    // Verify default coordinates were used
+    const callUrl = (global.fetch as jest.Mock).mock.calls[0][0];
+    expect(callUrl).toContain('latitude=41.0793');
+    expect(callUrl).toContain('longitude=-85.1394');
+    expect(callUrl).toContain('temperature_unit=fahrenheit');
   });
 
-  it('should use default coordinates when env vars not set', async () => {
-    delete process.env.WEATHER_LAT;
-    delete process.env.WEATHER_LON;
+  it('should use defaults for missing individual settings', async () => {
+    (prisma.setting.findMany as jest.Mock).mockResolvedValue([
+      { id: 'weather.latitude', category: 'weather', value: '39.7684' },
+      // Missing longitude, location, and units
+    ]);
 
     (global.fetch as jest.Mock).mockResolvedValue({
       ok: true,
       json: async () => mockOpenMeteoResponse,
     });
 
-    await GET();
+    const response = await GET();
+    const data = await response.json();
+
+    expect(data.location).toBe('Fort Wayne, IN'); // Default
 
     const callUrl = (global.fetch as jest.Mock).mock.calls[0][0];
-    expect(callUrl).toContain('latitude=41.0793');
-    expect(callUrl).toContain('longitude=-85.1394');
+    expect(callUrl).toContain('latitude=39.7684'); // From settings
+    expect(callUrl).toContain('longitude=-85.1394'); // Default
+    expect(callUrl).toContain('temperature_unit=fahrenheit'); // Default
   });
 
   it('should include required weather parameters', async () => {
@@ -132,6 +189,24 @@ describe('GET /api/weather', () => {
     // Timezone is URL-encoded (/ becomes %2F)
     expect(callUrl).toContain('timezone=America%2FIndiana%2FIndianapolis');
     expect(callUrl).toContain('forecast_days=7');
+  });
+
+  it('should handle database errors gracefully', async () => {
+    (prisma.setting.findMany as jest.Mock).mockRejectedValue(
+      new Error('Database connection failed')
+    );
+
+    (global.fetch as jest.Mock).mockResolvedValue({
+      ok: true,
+      json: async () => mockOpenMeteoResponse,
+    });
+
+    const response = await GET();
+    const data = await response.json();
+
+    // Should still return weather data with defaults
+    expect(response.status).toBe(500);
+    expect(data).toEqual({ error: 'Failed to fetch weather' });
   });
 
   it('should handle Open-Meteo API errors', async () => {
@@ -157,7 +232,10 @@ describe('GET /api/weather', () => {
 
     expect(response.status).toBe(500);
     expect(data).toEqual({ error: 'Failed to fetch weather' });
-    expect(consoleError).toHaveBeenCalled();
+    expect(consoleError).toHaveBeenCalledWith(
+      '[Weather API] Error fetching weather:',
+      expect.any(Error)
+    );
 
     consoleError.mockRestore();
   });
@@ -220,5 +298,18 @@ describe('GET /api/weather', () => {
     const lastUpdated = new Date(data.lastUpdated);
     expect(lastUpdated.getTime()).toBeGreaterThanOrEqual(before.getTime());
     expect(lastUpdated.getTime()).toBeLessThanOrEqual(after.getTime());
+  });
+
+  it('should query settings from database', async () => {
+    (global.fetch as jest.Mock).mockResolvedValue({
+      ok: true,
+      json: async () => mockOpenMeteoResponse,
+    });
+
+    await GET();
+
+    expect(prisma.setting.findMany).toHaveBeenCalledWith({
+      where: { category: 'weather' },
+    });
   });
 });
