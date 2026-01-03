@@ -5,6 +5,8 @@
 
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
+import type { AIBehaviorSettings } from '@/lib/ai-behavior';
+import { DEFAULT_AI_BEHAVIOR, fetchAIBehaviorSettings } from '@/lib/ai-behavior';
 
 // ============================================
 // TYPES
@@ -297,15 +299,125 @@ function getContextualTip(weather: WeatherCurrent, eventCount: number): string |
 }
 
 // ============================================
+// HELPER: Build AI system prompt
+// ============================================
+
+function buildSystemPrompt(context: ContextData, aiBehavior: AIBehaviorSettings): string {
+  const parts: string[] = [];
+
+  // Base role (ALWAYS INCLUDED)
+  parts.push('You are a helpful assistant for a smart mirror display.');
+
+  // Verbosity instruction (from settings.verbosity)
+  if (aiBehavior.verbosity === 'low') {
+    parts.push('Be extremely brief - essential facts only.');
+  } else if (aiBehavior.verbosity === 'high') {
+    parts.push('Provide detailed, descriptive summaries.');
+  } else {
+    parts.push('Generate a brief, friendly daily briefing in 2-3 sentences.');
+  }
+
+  // Tone instruction (from settings.tone)
+  if (aiBehavior.tone === 'formal') {
+    parts.push('Use professional, formal language.');
+  } else {
+    parts.push('Be warm but concise.');
+  }
+
+  // Humor level (from settings.humorLevel)
+  if (aiBehavior.humorLevel === 'playful') {
+    parts.push('Add light humor and playful comparisons where appropriate.');
+  } else if (aiBehavior.humorLevel === 'subtle') {
+    parts.push('Use subtle wordplay occasionally.');
+  }
+  // none = no instruction
+
+  // Time-based tone override
+  const hour = new Date().getHours();
+  const isMorning = hour >= 5 && hour < 17;
+
+  if (isMorning && aiBehavior.morningTone === 'energizing') {
+    parts.push('Be energizing and action-focused for the morning ahead.');
+  } else if (!isMorning && aiBehavior.eveningTone === 'calming') {
+    parts.push('Be reflective and calming for the evening.');
+  }
+
+  // Stress-aware mode
+  const todayEvents = context.calendar?.todayEvents ?? [];
+  if (aiBehavior.stressAwareEnabled && todayEvents.length >= 5) {
+    parts.push('The user has a very busy day. Use encouraging language and avoid adding pressure.');
+  }
+
+  // Celebration mode
+  const isWeekend = new Date().getDay() === 0 || new Date().getDay() === 6;
+  if (aiBehavior.celebrationModeEnabled && isWeekend) {
+    parts.push("It's the weekend - use an upbeat, celebratory tone!");
+  }
+
+  // User names
+  if (aiBehavior.userNames.length > 0) {
+    const names = aiBehavior.userNames.join(' and ');
+    parts.push(`Address the user(s) by name: ${names}`);
+  }
+
+  // Custom instructions (appended with reduced priority)
+  if (aiBehavior.customInstructions) {
+    parts.push(`Additional context: ${aiBehavior.customInstructions}`);
+  }
+
+  // ALWAYS exclude emojis
+  parts.push("Don't use emojis.");
+
+  return parts.join(' ');
+}
+
+// ============================================
 // OPENROUTER LLM INTEGRATION
 // ============================================
 
 const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
-const DEFAULT_MODEL = process.env.OPENROUTER_MODEL || 'anthropic/claude-3-haiku';
+
+/**
+ * Build model-specific request parameters
+ * Different providers support different parameters:
+ * - Anthropic Claude: temperature OR top_p (not both), no presence/frequency_penalty
+ * - Google Gemini: All parameters supported
+ * - OpenAI GPT: All parameters supported
+ */
+function buildModelParams(behaviorSettings: AIBehaviorSettings) {
+  const isAnthropic = behaviorSettings.model.includes('anthropic/');
+
+  const baseParams: Record<string, unknown> = {
+    model: behaviorSettings.model,
+    max_tokens: behaviorSettings.maxTokens,
+  };
+
+  // Anthropic: Only temperature OR top_p (prefer temperature)
+  // Claude models reject requests with both parameters
+  if (isAnthropic) {
+    baseParams.temperature = behaviorSettings.temperature;
+    // top_p omitted for Anthropic to avoid API errors
+    // presence_penalty and frequency_penalty not supported by Anthropic
+  } else {
+    // OpenAI and Gemini support all parameters
+    baseParams.temperature = behaviorSettings.temperature;
+    baseParams.top_p = behaviorSettings.topP;
+    baseParams.presence_penalty = behaviorSettings.presencePenalty;
+    baseParams.frequency_penalty = 1.5; // ALWAYS 1.5, not user-configurable
+  }
+
+  // Stop sequences supported by all providers
+  if (behaviorSettings.stopSequences.length > 0) {
+    baseParams.stop = behaviorSettings.stopSequences;
+  }
+
+  return baseParams;
+}
 
 async function generateAISummary(
   context: ContextData,
-  settings: AISummarySettings
+  summarySettings: AISummarySettings,
+  behaviorSettings: AIBehaviorSettings
 ): Promise<string | null> {
   const apiKey = process.env.OPENROUTER_API_KEY;
 
@@ -314,7 +426,19 @@ async function generateAISummary(
   }
 
   try {
-    const prompt = buildPrompt(context, settings);
+    const prompt = buildPrompt(context, summarySettings);
+    const systemPrompt = buildSystemPrompt(context, behaviorSettings);
+
+    const requestBody = {
+      ...buildModelParams(behaviorSettings),
+      messages: [
+        {
+          role: 'system',
+          content: systemPrompt,
+        },
+        { role: 'user', content: prompt },
+      ],
+    };
 
     const response = await fetch(OPENROUTER_URL, {
       method: 'POST',
@@ -324,19 +448,7 @@ async function generateAISummary(
         'HTTP-Referer': process.env.SITE_URL || 'http://localhost:3002',
         'X-Title': 'Magic Mirror',
       },
-      body: JSON.stringify({
-        model: DEFAULT_MODEL,
-        messages: [
-          {
-            role: 'system',
-            content:
-              "You are a helpful assistant for a smart mirror display. Generate a brief, friendly daily briefing in 2-3 sentences. Be warm but concise. Don't use emojis.",
-          },
-          { role: 'user', content: prompt },
-        ],
-        max_tokens: 150,
-        temperature: 0.7,
-      }),
+      body: JSON.stringify(requestBody),
     });
 
     if (!response.ok) {
@@ -346,7 +458,7 @@ async function generateAISummary(
     }
 
     const data = await response.json();
-    console.log(`AI summary generated using ${DEFAULT_MODEL}`);
+    console.log(`AI summary generated using ${behaviorSettings.model}`);
     return data.choices?.[0]?.message?.content?.trim() || null;
   } catch (error) {
     console.error('AI summary error:', error);
@@ -534,14 +646,15 @@ function buildPrompt(context: ContextData, settings: AISummarySettings): string 
 export async function GET(request: Request) {
   const { origin } = new URL(request.url);
 
-  // Fetch AI summary settings and context data in parallel
-  const [settings, context] = await Promise.all([
+  // Fetch settings and context data in parallel
+  const [summarySettings, behaviorSettings, context] = await Promise.all([
     fetchAISummarySettings(),
+    fetchAIBehaviorSettings(),
     fetchContextData(origin),
   ]);
 
   // Try AI summary first, fall back to template
-  let summary = await generateAISummary(context, settings);
+  let summary = await generateAISummary(context, summarySettings, behaviorSettings);
 
   if (!summary) {
     summary = generateTemplateSummary(context);
