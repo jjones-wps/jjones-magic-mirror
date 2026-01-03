@@ -6,7 +6,8 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import type { AIBehaviorSettings } from '@/lib/ai-behavior';
-import { DEFAULT_AI_BEHAVIOR, fetchAIBehaviorSettings } from '@/lib/ai-behavior';
+import { DEFAULT_AI_BEHAVIOR } from '@/lib/ai-behavior';
+import { fetchAIBehaviorSettings } from '@/lib/ai-behavior.server';
 
 // ============================================
 // TYPES
