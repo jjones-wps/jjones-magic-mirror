@@ -126,6 +126,7 @@ export default function AIBehaviorSettingsPage() {
             <label className="form-label">AI Model</label>
             <select
               className="form-select"
+              aria-label="AI Model"
               value={settings.model}
               onChange={(e) => setSettings({ ...settings, model: e.target.value })}
             >
@@ -361,6 +362,7 @@ export default function AIBehaviorSettingsPage() {
             <input
               type="text"
               className="form-input"
+              aria-label="User Names"
               value={settings.userNames.join(', ')}
               onChange={(e) =>
                 setSettings({
@@ -455,6 +457,7 @@ export default function AIBehaviorSettingsPage() {
               <label className="toggle-switch">
                 <input
                   type="checkbox"
+                  aria-label="Stress-Aware Mode"
                   checked={settings.stressAwareEnabled}
                   onChange={(e) =>
                     setSettings({ ...settings, stressAwareEnabled: e.target.checked })
@@ -477,6 +480,7 @@ export default function AIBehaviorSettingsPage() {
               <label className="toggle-switch">
                 <input
                   type="checkbox"
+                  aria-label="Celebration Mode"
                   checked={settings.celebrationModeEnabled}
                   onChange={(e) =>
                     setSettings({ ...settings, celebrationModeEnabled: e.target.checked })

@@ -275,6 +275,7 @@ export default function CalendarSettingsPage() {
                 max="14"
                 value={daysAhead}
                 onChange={(e) => setDaysAhead(Number(e.target.value))}
+                aria-label="Days Ahead"
                 style={{
                   flex: 1,
                   accentColor: 'var(--admin-text-primary)',
@@ -303,7 +304,12 @@ export default function CalendarSettingsPage() {
             >
               Max Events Shown
             </label>
-            <select className="admin-input" style={{ cursor: 'pointer' }} defaultValue="5">
+            <select
+              className="admin-input"
+              style={{ cursor: 'pointer' }}
+              defaultValue="5"
+              aria-label="Max Events Shown"
+            >
               <option value="3">3 events</option>
               <option value="5">5 events</option>
               <option value="7">7 events</option>
@@ -318,7 +324,12 @@ export default function CalendarSettingsPage() {
             >
               Refresh Interval
             </label>
-            <select className="admin-input" style={{ cursor: 'pointer' }} defaultValue="5">
+            <select
+              className="admin-input"
+              style={{ cursor: 'pointer' }}
+              defaultValue="5"
+              aria-label="Refresh Interval"
+            >
               <option value="1">1 minute</option>
               <option value="5">5 minutes</option>
               <option value="15">15 minutes</option>
@@ -464,6 +475,7 @@ export default function CalendarSettingsPage() {
                       className="admin-btn admin-btn-ghost"
                       style={{ padding: 'var(--space-sm)' }}
                       title="Edit"
+                      aria-label="Edit feed"
                     >
                       ✎
                     </button>
@@ -472,6 +484,7 @@ export default function CalendarSettingsPage() {
                       style={{ padding: 'var(--space-sm)', color: 'var(--admin-error)' }}
                       onClick={() => removeFeed(feed.id)}
                       title="Remove"
+                      aria-label="Remove feed"
                     >
                       ✕
                     </button>
