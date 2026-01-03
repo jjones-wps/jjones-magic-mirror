@@ -10,10 +10,14 @@ import { WeatherIcon } from './WeatherIcons';
 // ============================================
 // CONFIGURATION
 // ============================================
-const WEATHER_LAT = 41.0793;
-const WEATHER_LON = -85.1394;
-const WEATHER_LOCATION = 'Fort Wayne, IN';
 const REFRESH_INTERVAL = 15 * 60 * 1000; // 15 minutes
+
+interface WeatherSettings {
+  latitude: string;
+  longitude: string;
+  location: string;
+  units: 'fahrenheit' | 'celsius';
+}
 
 // ============================================
 // ANIMATED NUMBER COMPONENT
@@ -105,18 +109,49 @@ function ForecastDay({ day, isToday }: ForecastDayProps) {
 // ============================================
 export default function Weather() {
   const [weather, setWeather] = useState<WeatherData | null>(null);
+  const [settings, setSettings] = useState<WeatherSettings | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Fetch weather settings from admin API
   useEffect(() => {
+    async function loadSettings() {
+      try {
+        const response = await fetch('/api/weather/settings');
+        if (!response.ok) {
+          throw new Error('Failed to fetch weather settings');
+        }
+        const data = await response.json();
+        setSettings(data);
+      } catch (err) {
+        console.error('[Weather] Error fetching settings:', err);
+        // Use defaults if settings fetch fails
+        setSettings({
+          latitude: '41.0793',
+          longitude: '-85.1394',
+          location: 'Fort Wayne, IN',
+          units: 'fahrenheit',
+        });
+      }
+    }
+
+    loadSettings();
+  }, []);
+
+  // Fetch weather data using settings
+  useEffect(() => {
+    if (!settings) return; // Wait for settings to load
+
     async function loadWeather() {
       try {
-        const data = await fetchWeather(WEATHER_LAT, WEATHER_LON, WEATHER_LOCATION);
+        const lat = parseFloat(settings.latitude);
+        const lon = parseFloat(settings.longitude);
+        const data = await fetchWeather(lat, lon, settings.location);
         setWeather(data);
         setError(null);
       } catch (err) {
         setError('Unable to load weather');
-        console.error('Weather fetch error:', err);
+        console.error('[Weather] Fetch error:', err);
       } finally {
         setLoading(false);
       }
@@ -129,7 +164,7 @@ export default function Weather() {
     const interval = setInterval(loadWeather, REFRESH_INTERVAL);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [settings]); // Re-fetch when settings change
 
   // Loading state
   if (loading) {
