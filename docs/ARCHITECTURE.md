@@ -1068,6 +1068,114 @@ Next.js automatically applies production optimizations:
 
 ## Caching Strategy
 
+### Multi-Layer Caching Flow
+
+The following diagram illustrates the complete caching strategy from client state through to external API calls:
+
+```mermaid
+flowchart TD
+    Start([Widget needs data]) --> ClientState{Data in<br/>React state?}
+
+    ClientState -->|Yes| RenderUI[Render from state]
+    ClientState -->|No| APICall[Fetch /api/weather]
+
+    APICall --> ServerCache{Next.js cache<br/>fresh?<br/>revalidate: 900s}
+
+    ServerCache -->|Cache Hit<br/>age < 15 min| ReturnCached[Return cached response<br/>⚡ ~10-50ms]
+    ServerCache -->|Cache Miss<br/>age ≥ 15 min| StaleCheck{Stale-while-<br/>revalidate?}
+
+    StaleCheck -->|Yes<br/>Serve stale + refresh| ServeStale[Serve stale data<br/>to client immediately]
+    StaleCheck -->|No<br/>Hard miss| ExternalAPI[Fetch Open-Meteo API]
+
+    ServeStale --> BackgroundRefresh[Background: Fetch<br/>Open-Meteo API]
+
+    ExternalAPI --> DBQuery[Query database<br/>for weather settings]
+    BackgroundRefresh --> DBQuery2[Query database<br/>for weather settings]
+
+    DBQuery --> CallExternal[HTTP GET to<br/>Open-Meteo<br/>~200-500ms]
+    DBQuery2 --> CallExternal2[HTTP GET to<br/>Open-Meteo<br/>~200-500ms]
+
+    CallExternal --> Transform[Transform data<br/>Round temps<br/>Add location]
+    CallExternal2 --> Transform2[Transform data<br/>Update cache]
+
+    Transform --> CacheStore[Store in Next.js<br/>cache for 900s]
+    Transform2 --> CacheStore2[Update cache<br/>for next request]
+
+    CacheStore --> ReturnFresh[Return fresh data<br/>to client]
+    ReturnCached --> ClientStore[Store in React state<br/>setWeather data]
+    ServeStale --> ClientStore2[Store stale in state<br/>Fresh data on next poll]
+    ReturnFresh --> ClientStore3[Store in React state<br/>setWeather data]
+
+    ClientStore --> RenderUI2[Render widget UI]
+    ClientStore2 --> RenderUI3[Render widget UI]
+    ClientStore3 --> RenderUI4[Render widget UI]
+
+    RenderUI2 --> Wait[Wait for interval<br/>15 min: weather<br/>5 min: commute<br/>15 sec: spotify]
+    RenderUI3 --> Wait
+    RenderUI4 --> Wait
+
+    Wait --> ClientState
+
+    subgraph "Client Layer (Browser)"
+        Start
+        ClientState
+        RenderUI
+        RenderUI2
+        RenderUI3
+        RenderUI4
+        Wait
+        APICall
+        ClientStore
+        ClientStore2
+        ClientStore3
+    end
+
+    subgraph "Server Cache Layer (Next.js)"
+        ServerCache
+        ReturnCached
+        StaleCheck
+        ServeStale
+        BackgroundRefresh
+        CacheStore
+        CacheStore2
+        Transform2
+        ReturnFresh
+        Transform
+    end
+
+    subgraph "External API Layer"
+        ExternalAPI
+        CallExternal
+        CallExternal2
+    end
+
+    subgraph "Database Layer"
+        DBQuery
+        DBQuery2
+    end
+
+    classDef client fill:#e1f5ff,stroke:#01579b,stroke-width:2px
+    classDef cache fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    classDef external fill:#e8f5e9,stroke:#388e3c,stroke-width:2px
+    classDef database fill:#f3e5f5,stroke:#6a1b9a,stroke-width:2px
+
+    class Start,ClientState,RenderUI,RenderUI2,RenderUI3,RenderUI4,Wait,APICall,ClientStore,ClientStore2,ClientStore3 client
+    class ServerCache,ReturnCached,StaleCheck,ServeStale,BackgroundRefresh,CacheStore,CacheStore2,Transform2,ReturnFresh,Transform cache
+    class ExternalAPI,CallExternal,CallExternal2 external
+    class DBQuery,DBQuery2 database
+```
+
+**Key Performance Metrics:**
+- **Cache Hit**: ~10-50ms (return from Next.js cache)
+- **Stale-While-Revalidate**: ~10-50ms initial response + background refresh
+- **Cache Miss**: ~200-500ms (external API call + database query + transformation)
+
+**Color Legend:**
+- 🔵 **Blue (Client)**: Browser-side operations (React state, rendering, polling)
+- 🟠 **Orange (Server Cache)**: Next.js caching layer (revalidate logic, stale-while-revalidate)
+- 🟢 **Green (External API)**: Third-party API calls (Open-Meteo, TomTom, etc.)
+- 🟣 **Purple (Database)**: Prisma database queries (weather settings, calendar feeds)
+
 ### Server-Side Caching (Next.js)
 
 Next.js App Router supports `revalidate` in API routes for automatic caching:
@@ -1170,6 +1278,85 @@ No explicit cache warming strategy (lazy caching only):
 ---
 
 ## Widget Architecture
+
+### Widget Lifecycle State Machine
+
+The following diagram shows the complete lifecycle of a widget from initial mount through data fetching, rendering, and cleanup:
+
+```mermaid
+stateDiagram-v2
+    [*] --> Unmounted: Component created
+
+    Unmounted --> Mounting: Component mounts<br/>(useEffect triggered)
+
+    Mounting --> Loading: Settings API call<br/>(fetch /api/weather/settings)
+
+    Loading --> LoadingData: Settings loaded<br/>(second useEffect triggered)
+
+    LoadingData --> Ready: API success<br/>(setWeather + setLoading(false))
+    LoadingData --> Error: API failure<br/>(setError + setLoading(false))
+
+    Ready --> Ready: Periodic refresh<br/>(setInterval fires)
+    Ready --> Error: Refresh fails<br/>(catch block)
+
+    Error --> Ready: Refresh succeeds<br/>(setWeather + setError(null))
+    Error --> Error: Refresh fails again<br/>(setError persists)
+
+    Ready --> Unmounted: Component unmounts<br/>(clearInterval cleanup)
+    Error --> Unmounted: Component unmounts<br/>(clearInterval cleanup)
+
+    note right of Unmounted
+        Initial state before React
+        renders the component
+    end note
+
+    note right of Mounting
+        useEffect runs
+        Fetches settings first
+        loading = true
+    end note
+
+    note right of LoadingData
+        Second useEffect runs
+        when settings available
+        Fetches actual data
+    end note
+
+    note right of Ready
+        Widget displays data
+        setInterval runs every
+        15 min (weather example)
+    end note
+
+    note right of Error
+        Displays fallback UI
+        "Unable to load weather"
+        Still attempts periodic refresh
+    end note
+
+    classDef initial fill:#e3f2fd,stroke:#1976d2,stroke-width:2px
+    classDef loading fill:#fff9c4,stroke:#f57f17,stroke-width:2px
+    classDef success fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px
+    classDef error fill:#ffebee,stroke:#c62828,stroke-width:2px
+
+    class Unmounted,Mounting initial
+    class Loading,LoadingData loading
+    class Ready success
+    class Error error
+```
+
+**State Descriptions:**
+- **Unmounted/Mounting** (🔵 Blue): Initial setup phase, component initialization
+- **Loading/LoadingData** (🟡 Yellow): Fetching configuration and data from APIs
+- **Ready** (🟢 Green): Successfully rendering with fresh data, periodic refresh active
+- **Error** (🔴 Red): Fallback UI displayed, error state with retry capability
+
+**Typical State Durations:**
+- Unmounted → Mounting: Instant (React render)
+- Mounting → Loading: ~10-50ms (Next.js cache hit) or ~200-500ms (cache miss)
+- Loading → LoadingData: ~10-50ms (settings fetch)
+- LoadingData → Ready: ~10-50ms (cached) or ~200-500ms (external API)
+- Ready → Ready: 15 minutes (weather), 5 minutes (commute), 15 seconds (Spotify)
 
 ### Standard Widget Pattern
 
