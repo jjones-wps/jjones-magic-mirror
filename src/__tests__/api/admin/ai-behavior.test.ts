@@ -20,6 +20,7 @@ jest.mock('@/lib/db', () => ({
     configVersion: {
       upsert: jest.fn(),
     },
+    $transaction: jest.fn((operations) => Promise.all(operations)),
   },
 }));
 
