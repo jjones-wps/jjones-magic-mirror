@@ -191,6 +191,14 @@ On each commit, staged files are:
 
 The CI pipeline then runs the full test suite (296 tests) before deployment.
 
+**Emergency bypass:** In rare cases where you need to bypass hooks (e.g., WIP commits, emergency hotfixes), use:
+
+```bash
+git commit --no-verify -m "your message"
+```
+
+Use sparingly - hooks exist to maintain code quality.
+
 ## Environment Variables
 
 Create a `.env.local` file based on `.env.example`:
