@@ -4,6 +4,7 @@
  */
 
 import { NextResponse } from 'next/server';
+import { prisma } from '@/lib/db';
 
 // ============================================
 // TYPES
@@ -67,6 +68,45 @@ interface ContextData {
   commute: CommuteData | null;
 }
 
+interface AISummarySettings {
+  // Weather context toggles
+  includeWeatherLocation: boolean;
+  includeFeelsLike: boolean;
+  includeWindSpeed: boolean;
+  includePrecipitation: boolean;
+  includeTomorrowWeather: boolean;
+
+  // Calendar context toggles
+  includeCalendar: boolean;
+  includeEventTimes: boolean;
+  includeTimeUntilNext: boolean;
+  includeAllDayEvents: boolean;
+
+  // Commute context toggles
+  includeCommute: boolean;
+  includeCommuteDeviation: boolean;
+
+  // Time context toggles
+  includeDayDate: boolean;
+  includeWeekendDetection: boolean;
+}
+
+const DEFAULT_SETTINGS: AISummarySettings = {
+  includeWeatherLocation: true,
+  includeFeelsLike: true,
+  includeWindSpeed: true,
+  includePrecipitation: true,
+  includeTomorrowWeather: true,
+  includeCalendar: true,
+  includeEventTimes: true,
+  includeTimeUntilNext: true,
+  includeAllDayEvents: true,
+  includeCommute: true,
+  includeCommuteDeviation: true,
+  includeDayDate: true,
+  includeWeekendDetection: true,
+};
+
 // ============================================
 // HELPER: Get time-based greeting
 // ============================================
@@ -95,6 +135,50 @@ async function fetchContextData(baseUrl: string): Promise<ContextData> {
     calendar: calendarRes?.ok ? await calendarRes.json() : null,
     commute: commuteRes?.ok ? await commuteRes.json() : null,
   };
+}
+
+// ============================================
+// HELPER: Fetch AI Summary settings
+// ============================================
+
+async function fetchAISummarySettings(): Promise<AISummarySettings> {
+  try {
+    const settings = await prisma.setting.findMany({
+      where: { category: 'ai-summary' },
+    });
+
+    // If no settings exist, return defaults
+    if (settings.length === 0) {
+      return DEFAULT_SETTINGS;
+    }
+
+    // Transform database settings into typed object
+    const settingsMap: Record<string, string> = {};
+    settings.forEach((setting) => {
+      const key = setting.id.replace('ai-summary.', '');
+      settingsMap[key] = setting.value;
+    });
+
+    // Build response with defaults for missing values
+    return {
+      includeWeatherLocation: settingsMap.includeWeatherLocation !== 'false',
+      includeFeelsLike: settingsMap.includeFeelsLike !== 'false',
+      includeWindSpeed: settingsMap.includeWindSpeed !== 'false',
+      includePrecipitation: settingsMap.includePrecipitation !== 'false',
+      includeTomorrowWeather: settingsMap.includeTomorrowWeather !== 'false',
+      includeCalendar: settingsMap.includeCalendar !== 'false',
+      includeEventTimes: settingsMap.includeEventTimes !== 'false',
+      includeTimeUntilNext: settingsMap.includeTimeUntilNext !== 'false',
+      includeAllDayEvents: settingsMap.includeAllDayEvents !== 'false',
+      includeCommute: settingsMap.includeCommute !== 'false',
+      includeCommuteDeviation: settingsMap.includeCommuteDeviation !== 'false',
+      includeDayDate: settingsMap.includeDayDate !== 'false',
+      includeWeekendDetection: settingsMap.includeWeekendDetection !== 'false',
+    };
+  } catch (error) {
+    console.error('Error fetching AI summary settings, using defaults:', error);
+    return DEFAULT_SETTINGS;
+  }
 }
 
 // ============================================
@@ -219,7 +303,10 @@ function getContextualTip(weather: WeatherCurrent, eventCount: number): string |
 const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
 const DEFAULT_MODEL = process.env.OPENROUTER_MODEL || 'anthropic/claude-3-haiku';
 
-async function generateAISummary(context: ContextData): Promise<string | null> {
+async function generateAISummary(
+  context: ContextData,
+  settings: AISummarySettings
+): Promise<string | null> {
   const apiKey = process.env.OPENROUTER_API_KEY;
 
   if (!apiKey) {
@@ -227,7 +314,7 @@ async function generateAISummary(context: ContextData): Promise<string | null> {
   }
 
   try {
-    const prompt = buildPrompt(context);
+    const prompt = buildPrompt(context, settings);
 
     const response = await fetch(OPENROUTER_URL, {
       method: 'POST',
@@ -275,7 +362,7 @@ function getTimeOfDay(): string {
   return 'night';
 }
 
-function buildPrompt(context: ContextData): string {
+function buildPrompt(context: ContextData, settings: AISummarySettings): string {
   const now = new Date();
   const timeOfDay = getTimeOfDay();
   const hour = now.getHours();
@@ -283,41 +370,56 @@ function buildPrompt(context: ContextData): string {
   const isWeekend = now.getDay() === 0 || now.getDay() === 6;
   const isWeekdayMorning = !isWeekend && hour >= 6 && hour <= 9;
 
-  // Day and date context
-  const dayName = now.toLocaleDateString('en-US', { weekday: 'long' });
-  const dateStr = now.toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
+  // Day and date context (if enabled)
+  let briefingIntro = `Generate a brief ${timeOfDay} briefing`;
+  if (settings.includeDayDate) {
+    const dayName = now.toLocaleDateString('en-US', { weekday: 'long' });
+    const dateStr = now.toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
+    briefingIntro += ` for ${dayName}, ${dateStr}`;
+  }
+  briefingIntro += ' based on:';
 
-  const parts: string[] = [
-    `Generate a brief ${timeOfDay} briefing for ${dayName}, ${dateStr} based on:`,
-  ];
+  const parts: string[] = [briefingIntro];
 
-  // Weekend detection
-  if (isWeekend) {
+  // Weekend detection (if enabled)
+  if (settings.includeWeekendDetection && isWeekend) {
     parts.push(`Note: It's the weekend!`);
   }
 
   // Weather context
   if (context.weather?.current) {
     const { temperature, feelsLike, weatherCode, windSpeed } = context.weather.current;
-    const location = context.weather.location || 'your location';
     const conditions = getWeatherDescription(weatherCode);
 
-    let weatherLine = `Weather in ${location}: ${temperature}°F, ${conditions}`;
+    // Build weather line with conditional parts
+    let weatherLine = `Weather`;
 
-    // Add feels-like if differs by more than 5 degrees
-    if (Math.abs(temperature - feelsLike) > 5) {
+    // Add location if enabled
+    if (settings.includeWeatherLocation) {
+      const location = context.weather.location || 'your location';
+      weatherLine += ` in ${location}`;
+    }
+
+    weatherLine += `: ${temperature}°F, ${conditions}`;
+
+    // Add feels-like if enabled and differs by more than 5 degrees
+    if (settings.includeFeelsLike && Math.abs(temperature - feelsLike) > 5) {
       weatherLine += ` (feels like ${feelsLike}°F)`;
     }
 
-    // Add wind if noteworthy (>15mph)
-    if (windSpeed > 15) {
+    // Add wind if enabled and noteworthy (>15mph)
+    if (settings.includeWindSpeed && windSpeed > 15) {
       weatherLine += `, winds at ${windSpeed}mph`;
     }
 
     parts.push(weatherLine);
 
-    // Precipitation probability with type
-    if (context.weather.daily && context.weather.daily.length > 0) {
+    // Precipitation probability with type (if enabled)
+    if (
+      settings.includePrecipitation &&
+      context.weather.daily &&
+      context.weather.daily.length > 0
+    ) {
       const todayForecast = context.weather.daily[0];
       if (todayForecast.precipitationProbability >= 30) {
         const precipType = getPrecipitationType(todayForecast.weatherCode);
@@ -325,53 +427,88 @@ function buildPrompt(context: ContextData): string {
       }
     }
 
-    // Tomorrow's weather (evening briefings only)
-    if (isEvening && context.weather.daily && context.weather.daily.length > 1) {
+    // Tomorrow's weather (if enabled and evening briefing)
+    if (
+      settings.includeTomorrowWeather &&
+      isEvening &&
+      context.weather.daily &&
+      context.weather.daily.length > 1
+    ) {
       const tomorrow = context.weather.daily[1];
       parts.push(`Tomorrow: High ${tomorrow.tempHigh}°F, Low ${tomorrow.tempLow}°F`);
     }
   }
 
-  // Calendar context with timing
-  if (context.calendar?.todayEvents && context.calendar.todayEvents.length > 0) {
+  // Calendar context (if enabled)
+  if (
+    settings.includeCalendar &&
+    context.calendar?.todayEvents &&
+    context.calendar.todayEvents.length > 0
+  ) {
     const events = context.calendar.todayEvents.slice(0, 5);
     const eventLines: string[] = [];
 
     events.forEach((event) => {
+      // All-day events (if enabled)
       if (event.allDay) {
-        eventLines.push(`${event.title} (all day)`);
-      } else {
-        const startTime = new Date(event.start);
-        const timeStr = startTime.toLocaleTimeString('en-US', {
-          hour: 'numeric',
-          minute: '2-digit',
-          hour12: true,
-        });
-
-        // Calculate time until event
-        const hoursUntil = (startTime.getTime() - now.getTime()) / (1000 * 60 * 60);
-        if (hoursUntil > 0 && hoursUntil < 3) {
-          const minutesUntil = Math.round(hoursUntil * 60);
-          eventLines.push(`${event.title} at ${timeStr} (in ${minutesUntil} min)`);
+        if (settings.includeAllDayEvents) {
+          eventLines.push(`${event.title} (all day)`);
         } else {
-          eventLines.push(`${event.title} at ${timeStr}`);
+          // If all-day events disabled, just show title without time
+          eventLines.push(event.title);
         }
+      } else {
+        // Timed events
+        let eventStr = event.title;
+
+        // Add event times if enabled
+        if (settings.includeEventTimes) {
+          const startTime = new Date(event.start);
+          const timeStr = startTime.toLocaleTimeString('en-US', {
+            hour: 'numeric',
+            minute: '2-digit',
+            hour12: true,
+          });
+
+          // Add time-until urgency if enabled
+          if (settings.includeTimeUntilNext) {
+            const hoursUntil = (startTime.getTime() - now.getTime()) / (1000 * 60 * 60);
+            if (hoursUntil > 0 && hoursUntil < 3) {
+              const minutesUntil = Math.round(hoursUntil * 60);
+              eventStr += ` at ${timeStr} (in ${minutesUntil} min)`;
+            } else {
+              eventStr += ` at ${timeStr}`;
+            }
+          } else {
+            eventStr += ` at ${timeStr}`;
+          }
+        }
+
+        eventLines.push(eventStr);
       }
     });
 
-    parts.push(`Today's schedule:\n${eventLines.map((e) => `- ${e}`).join('\n')}`);
-  } else {
+    if (eventLines.length > 0) {
+      parts.push(`Today's schedule:\n${eventLines.map((e) => `- ${e}`).join('\n')}`);
+    }
+  } else if (settings.includeCalendar) {
     parts.push('No events scheduled today.');
   }
 
-  // Commute intelligence (weekday mornings only)
-  if (isWeekdayMorning && context.commute?.commutes && context.commute.commutes.length > 0) {
+  // Commute intelligence (if enabled and weekday morning)
+  if (
+    settings.includeCommute &&
+    isWeekdayMorning &&
+    context.commute?.commutes &&
+    context.commute.commutes.length > 0
+  ) {
     const primaryCommute = context.commute.commutes[0];
     const baselineMinutes = 22; // TODO: Make this configurable or calculated
     const currentMinutes = primaryCommute.durationMinutes;
     const deviation = currentMinutes - baselineMinutes;
 
-    if (Math.abs(deviation) >= 3) {
+    // Show deviation alerts if enabled
+    if (settings.includeCommuteDeviation && Math.abs(deviation) >= 3) {
       if (deviation > 0) {
         parts.push(
           `Traffic alert: Your commute is running ${Math.round(deviation)} minutes longer than usual (${currentMinutes} min total)`
@@ -382,7 +519,7 @@ function buildPrompt(context: ContextData): string {
         );
       }
     } else {
-      // Normal traffic, but still mention duration
+      // Normal traffic - always show duration if commute is enabled
       parts.push(`Commute time: ${currentMinutes} minutes with current traffic`);
     }
   }
@@ -397,11 +534,14 @@ function buildPrompt(context: ContextData): string {
 export async function GET(request: Request) {
   const { origin } = new URL(request.url);
 
-  // Fetch context data
-  const context = await fetchContextData(origin);
+  // Fetch AI summary settings and context data in parallel
+  const [settings, context] = await Promise.all([
+    fetchAISummarySettings(),
+    fetchContextData(origin),
+  ]);
 
   // Try AI summary first, fall back to template
-  let summary = await generateAISummary(context);
+  let summary = await generateAISummary(context, settings);
 
   if (!summary) {
     summary = generateTemplateSummary(context);

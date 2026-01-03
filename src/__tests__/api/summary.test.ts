@@ -4,6 +4,16 @@
  */
 
 import { GET } from '@/app/api/summary/route';
+import { prisma } from '@/lib/db';
+
+// Mock Prisma
+jest.mock('@/lib/db', () => ({
+  prisma: {
+    setting: {
+      findMany: jest.fn(),
+    },
+  },
+}));
 
 // Mock fetch globally
 global.fetch = jest.fn();
@@ -82,6 +92,23 @@ describe('GET /api/summary', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     jest.useFakeTimers();
+
+    // Mock AI summary settings (all enabled by default)
+    (prisma.setting.findMany as jest.Mock).mockResolvedValue([
+      { id: 'ai-summary.includeWeatherLocation', category: 'ai-summary', value: 'true' },
+      { id: 'ai-summary.includeFeelsLike', category: 'ai-summary', value: 'true' },
+      { id: 'ai-summary.includeWindSpeed', category: 'ai-summary', value: 'true' },
+      { id: 'ai-summary.includePrecipitation', category: 'ai-summary', value: 'true' },
+      { id: 'ai-summary.includeTomorrowWeather', category: 'ai-summary', value: 'true' },
+      { id: 'ai-summary.includeCalendar', category: 'ai-summary', value: 'true' },
+      { id: 'ai-summary.includeEventTimes', category: 'ai-summary', value: 'true' },
+      { id: 'ai-summary.includeTimeUntilNext', category: 'ai-summary', value: 'true' },
+      { id: 'ai-summary.includeAllDayEvents', category: 'ai-summary', value: 'true' },
+      { id: 'ai-summary.includeCommute', category: 'ai-summary', value: 'true' },
+      { id: 'ai-summary.includeCommuteDeviation', category: 'ai-summary', value: 'true' },
+      { id: 'ai-summary.includeDayDate', category: 'ai-summary', value: 'true' },
+      { id: 'ai-summary.includeWeekendDetection', category: 'ai-summary', value: 'true' },
+    ]);
   });
 
   afterEach(() => {
