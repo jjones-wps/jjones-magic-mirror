@@ -6,7 +6,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import type { AIBehaviorSettings } from '@/lib/ai-behavior';
-import { DEFAULT_AI_BEHAVIOR } from '@/lib/ai-behavior';
+import { DEFAULT_AI_BEHAVIOR, fetchAIBehaviorSettings } from '@/lib/ai-behavior';
 
 // ============================================
 // TYPES
@@ -299,71 +299,6 @@ function getContextualTip(weather: WeatherCurrent, eventCount: number): string |
 }
 
 // ============================================
-// HELPER: Fetch AI Behavior settings
-// ============================================
-
-async function fetchAIBehaviorSettings(): Promise<AIBehaviorSettings> {
-  try {
-    const settings = await prisma.setting.findMany({
-      where: { category: 'ai-behavior' },
-    });
-
-    // If no settings exist, return defaults
-    if (settings.length === 0) {
-      return DEFAULT_AI_BEHAVIOR;
-    }
-
-    // Transform database settings into typed object
-    const settingsMap: Record<string, string> = {};
-    settings.forEach((setting) => {
-      const key = setting.id.replace('ai-behavior.', '');
-      settingsMap[key] = setting.value;
-    });
-
-    // Build response with type coercion
-    const response: AIBehaviorSettings = {
-      // Model & Output Parameters
-      model: settingsMap.model || DEFAULT_AI_BEHAVIOR.model,
-      temperature: parseFloat(settingsMap.temperature || String(DEFAULT_AI_BEHAVIOR.temperature)),
-      maxTokens: parseInt(settingsMap.maxTokens || String(DEFAULT_AI_BEHAVIOR.maxTokens), 10),
-      topP: parseFloat(settingsMap.topP || String(DEFAULT_AI_BEHAVIOR.topP)),
-      presencePenalty: parseFloat(
-        settingsMap.presencePenalty || String(DEFAULT_AI_BEHAVIOR.presencePenalty)
-      ),
-      verbosity:
-        (settingsMap.verbosity as 'low' | 'medium' | 'high') || DEFAULT_AI_BEHAVIOR.verbosity,
-
-      // Tone & Personalization
-      tone: (settingsMap.tone as 'formal' | 'casual') || DEFAULT_AI_BEHAVIOR.tone,
-      userNames: settingsMap.userNames ? JSON.parse(settingsMap.userNames) : [],
-      humorLevel:
-        (settingsMap.humorLevel as 'none' | 'subtle' | 'playful') || DEFAULT_AI_BEHAVIOR.humorLevel,
-      customInstructions: settingsMap.customInstructions || '',
-
-      // Context-Aware Intelligence
-      morningTone:
-        (settingsMap.morningTone as 'energizing' | 'neutral' | 'custom') ||
-        DEFAULT_AI_BEHAVIOR.morningTone,
-      eveningTone:
-        (settingsMap.eveningTone as 'calming' | 'neutral' | 'custom') ||
-        DEFAULT_AI_BEHAVIOR.eveningTone,
-      stressAwareEnabled:
-        settingsMap.stressAwareEnabled === 'true' || DEFAULT_AI_BEHAVIOR.stressAwareEnabled,
-      celebrationModeEnabled:
-        settingsMap.celebrationModeEnabled === 'true' || DEFAULT_AI_BEHAVIOR.celebrationModeEnabled,
-
-      // Advanced Controls
-      stopSequences: settingsMap.stopSequences ? JSON.parse(settingsMap.stopSequences) : [],
-    };
-
-    return response;
-  } catch (error) {
-    console.error('Error fetching AI behavior settings, using defaults:', error);
-    return DEFAULT_AI_BEHAVIOR;
-  }
-}
-
-// ============================================
 // HELPER: Build AI system prompt
 // ============================================
 
@@ -451,8 +386,6 @@ const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
  */
 function buildModelParams(behaviorSettings: AIBehaviorSettings) {
   const isAnthropic = behaviorSettings.model.includes('anthropic/');
-  const _isGemini = behaviorSettings.model.includes('google/');
-  const _isOpenAI = behaviorSettings.model.includes('openai/');
 
   const baseParams: Record<string, unknown> = {
     model: behaviorSettings.model,

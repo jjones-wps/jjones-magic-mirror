@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth/server';
 import { prisma } from '@/lib/db';
 import type { AIBehaviorSettings } from '@/lib/ai-behavior';
-import { DEFAULT_AI_BEHAVIOR } from '@/lib/ai-behavior';
+import { fetchAIBehaviorSettings } from '@/lib/ai-behavior';
 
 /**
  * AI Behavior Settings API
@@ -22,63 +22,8 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const settings = await prisma.setting.findMany({
-      where: { category: 'ai-behavior' },
-    });
-
-    // If no settings exist, return defaults
-    if (settings.length === 0) {
-      return NextResponse.json(DEFAULT_AI_BEHAVIOR);
-    }
-
-    // Transform database settings into typed object
-    const settingsMap: Record<string, string> = {};
-    settings.forEach((setting) => {
-      const key = setting.id.replace('ai-behavior.', '');
-      settingsMap[key] = setting.value;
-    });
-
-    // Build response with type coercion
-    const response: AIBehaviorSettings = {
-      // Model & Output Parameters
-      model: settingsMap.model || DEFAULT_AI_BEHAVIOR.model,
-      temperature: parseFloat(settingsMap.temperature || String(DEFAULT_AI_BEHAVIOR.temperature)),
-      maxTokens: parseInt(settingsMap.maxTokens || String(DEFAULT_AI_BEHAVIOR.maxTokens), 10),
-      topP: parseFloat(settingsMap.topP || String(DEFAULT_AI_BEHAVIOR.topP)),
-      presencePenalty: parseFloat(
-        settingsMap.presencePenalty || String(DEFAULT_AI_BEHAVIOR.presencePenalty)
-      ),
-      verbosity:
-        (settingsMap.verbosity as 'low' | 'medium' | 'high') || DEFAULT_AI_BEHAVIOR.verbosity,
-
-      // Tone & Personalization
-      tone: (settingsMap.tone as 'formal' | 'casual') || DEFAULT_AI_BEHAVIOR.tone,
-      userNames: settingsMap.userNames ? JSON.parse(settingsMap.userNames) : [],
-      humorLevel:
-        (settingsMap.humorLevel as 'none' | 'subtle' | 'playful') || DEFAULT_AI_BEHAVIOR.humorLevel,
-      customInstructions: settingsMap.customInstructions || '',
-
-      // Context-Aware Intelligence
-      morningTone:
-        (settingsMap.morningTone as 'energizing' | 'neutral' | 'custom') ||
-        DEFAULT_AI_BEHAVIOR.morningTone,
-      eveningTone:
-        (settingsMap.eveningTone as 'calming' | 'neutral' | 'custom') ||
-        DEFAULT_AI_BEHAVIOR.eveningTone,
-      stressAwareEnabled:
-        settingsMap.stressAwareEnabled !== undefined
-          ? settingsMap.stressAwareEnabled === 'true'
-          : DEFAULT_AI_BEHAVIOR.stressAwareEnabled,
-      celebrationModeEnabled:
-        settingsMap.celebrationModeEnabled !== undefined
-          ? settingsMap.celebrationModeEnabled === 'true'
-          : DEFAULT_AI_BEHAVIOR.celebrationModeEnabled,
-
-      // Advanced Controls
-      stopSequences: settingsMap.stopSequences ? JSON.parse(settingsMap.stopSequences) : [],
-    };
-
-    return NextResponse.json(response);
+    const settings = await fetchAIBehaviorSettings();
+    return NextResponse.json(settings);
   } catch (error) {
     console.error('Error fetching AI behavior settings:', error);
     return NextResponse.json({ error: 'Failed to fetch AI behavior settings' }, { status: 500 });
@@ -177,9 +122,10 @@ export async function PUT(request: Request) {
       { id: 'ai-behavior.stopSequences', value: JSON.stringify(body.stopSequences) },
     ];
 
-    // Upsert all settings
-    await Promise.all(
-      settingsToUpdate.map((setting) =>
+    // Wrap all database operations in a transaction for atomicity
+    await prisma.$transaction([
+      // Upsert all settings
+      ...settingsToUpdate.map((setting) =>
         prisma.setting.upsert({
           where: { id: setting.id },
           update: { value: setting.value },
@@ -189,25 +135,23 @@ export async function PUT(request: Request) {
             value: setting.value,
           },
         })
-      )
-    );
-
-    // Log activity
-    await prisma.activityLog.create({
-      data: {
-        action: 'ai-behavior.update',
-        category: 'ai-behavior',
-        userId: session.user.id,
-        details: JSON.stringify(body),
-      },
-    });
-
-    // Increment config version to trigger mirror refresh
-    await prisma.configVersion.upsert({
-      where: { id: 'current' },
-      update: { version: { increment: 1 } },
-      create: { id: 'current', version: 1 },
-    });
+      ),
+      // Log activity
+      prisma.activityLog.create({
+        data: {
+          action: 'ai-behavior.update',
+          category: 'ai-behavior',
+          userId: session.user.id,
+          details: JSON.stringify(body),
+        },
+      }),
+      // Increment config version to trigger mirror refresh
+      prisma.configVersion.upsert({
+        where: { id: 'current' },
+        update: { version: { increment: 1 } },
+        create: { id: 'current', version: 1 },
+      }),
+    ]);
 
     return NextResponse.json({ success: true });
   } catch (error) {

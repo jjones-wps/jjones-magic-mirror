@@ -77,6 +77,9 @@ export default function AIBehaviorSettingsPage() {
     setSettings(originalSettings);
   };
 
+  // Check if Anthropic model is selected (topP and presencePenalty not supported)
+  const isAnthropic = settings.model.includes('anthropic/');
+
   if (loading) {
     return (
       <div className="page-container">
@@ -182,7 +185,12 @@ export default function AIBehaviorSettingsPage() {
 
           {/* Top-P */}
           <div className="form-field">
-            <label className="form-label">Top-P: {settings.topP.toFixed(2)}</label>
+            <label className="form-label">
+              Top-P: {settings.topP.toFixed(2)}
+              {isAnthropic && (
+                <span className="badge badge-warning ml-2">Not supported by Claude models</span>
+              )}
+            </label>
             <input
               type="range"
               min="0"
@@ -191,14 +199,26 @@ export default function AIBehaviorSettingsPage() {
               value={settings.topP}
               onChange={(e) => setSettings({ ...settings, topP: parseFloat(e.target.value) })}
               className="form-slider"
+              disabled={isAnthropic}
+              style={{
+                opacity: isAnthropic ? 0.5 : 1,
+                cursor: isAnthropic ? 'not-allowed' : 'pointer',
+              }}
             />
-            <p className="form-hint">Nucleus sampling - alternative to temperature</p>
+            <p className="form-hint">
+              {isAnthropic
+                ? 'Claude models use temperature instead of top-p for sampling control'
+                : 'Nucleus sampling - alternative to temperature'}
+            </p>
           </div>
 
           {/* Presence Penalty */}
           <div className="form-field">
             <label className="form-label">
               Presence Penalty: {settings.presencePenalty.toFixed(1)}
+              {isAnthropic && (
+                <span className="badge badge-warning ml-2">Not supported by Claude models</span>
+              )}
             </label>
             <input
               type="range"
@@ -210,8 +230,17 @@ export default function AIBehaviorSettingsPage() {
                 setSettings({ ...settings, presencePenalty: parseFloat(e.target.value) })
               }
               className="form-slider"
+              disabled={isAnthropic}
+              style={{
+                opacity: isAnthropic ? 0.5 : 1,
+                cursor: isAnthropic ? 'not-allowed' : 'pointer',
+              }}
             />
-            <p className="form-hint">Encourages AI to talk about new topics</p>
+            <p className="form-hint">
+              {isAnthropic
+                ? 'Claude models do not support presence/frequency penalties'
+                : 'Encourages AI to talk about new topics'}
+            </p>
           </div>
 
           {/* Verbosity */}
