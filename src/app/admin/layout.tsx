@@ -12,6 +12,7 @@ const navigation = [
   { name: 'Weather', href: '/admin/weather', icon: '◐' },
   { name: 'Commute', href: '/admin/commute', icon: '→' },
   { name: 'AI Summary', href: '/admin/ai-summary', icon: '◈' },
+  { name: 'AI Behavior', href: '/admin/ai-behavior', icon: '◆' },
   { name: 'System', href: '/admin/system', icon: '⚙' },
 ];
 
