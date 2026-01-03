@@ -160,6 +160,7 @@ export default function AIBehaviorSettingsPage() {
               max="2"
               step="0.1"
               value={settings.temperature}
+              aria-label="Temperature"
               onChange={(e) =>
                 setSettings({ ...settings, temperature: parseFloat(e.target.value) })
               }
@@ -179,6 +180,7 @@ export default function AIBehaviorSettingsPage() {
               max="300"
               step="10"
               value={settings.maxTokens}
+              aria-label="Max Tokens"
               onChange={(e) => setSettings({ ...settings, maxTokens: parseInt(e.target.value) })}
               className="form-slider"
             />

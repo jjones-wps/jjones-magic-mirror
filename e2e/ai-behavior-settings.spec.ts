@@ -26,8 +26,8 @@ test.describe('AI Behavior Settings', () => {
   });
 
   test('should persist settings after save and page reload', async ({ page }) => {
-    // Modify temperature slider
-    const temperatureSlider = page.locator('input[type="range"][min="0"][max="2"]').first();
+    // Modify temperature slider (using aria-label for unambiguous selection)
+    const temperatureSlider = page.getByRole('slider', { name: 'Temperature' });
     await temperatureSlider.fill('0.7');
 
     // Verify temperature display updates
@@ -74,8 +74,8 @@ test.describe('AI Behavior Settings', () => {
   });
 
   test('should reset changes when clicking Reset button', async ({ page }) => {
-    // Store original values
-    const temperatureSlider = page.locator('input[type="range"][min="0"][max="2"]').first();
+    // Store original values (using aria-label for unambiguous selection)
+    const temperatureSlider = page.getByRole('slider', { name: 'Temperature' });
     const originalTemperature = await temperatureSlider.inputValue();
 
     // Make changes
@@ -98,8 +98,8 @@ test.describe('AI Behavior Settings', () => {
   });
 
   test('should validate temperature range (0-2)', async ({ page }) => {
-    // Use more specific selector to avoid "Presence Penalty" slider (also has max="2")
-    const temperatureSlider = page.locator('input[type="range"][min="0"][max="2"]').first();
+    // Use aria-label for unambiguous selection (best practice)
+    const temperatureSlider = page.getByRole('slider', { name: 'Temperature' });
 
     // Set to minimum
     await temperatureSlider.fill('0');

@@ -348,8 +348,8 @@ npm run test:e2e:report    # Show last test report
 ```
 
 **Test Status**:
-- ✅ **11 tests passing** - Core navigation and form validation
-- ⏭️ **23 tests skipped** - Incomplete admin features (calendar, weather, AI behavior forms)
+- ✅ **31 tests passing** - 91% success rate (Navigation, Calendar, Weather fully passing)
+- ❌ **3 tests failing** - AI Behavior form persistence edge cases (React state detection)
 
 **Authentication Setup**:
 
@@ -368,11 +368,12 @@ Credentials can be customized via environment variables:
 - ✅ Navigation maintains state across page transitions
 - ✅ Direct URL navigation to admin pages
 - ✅ No console errors during navigation
-- ✅ AI Behavior slider validation (temperature 0-2, max tokens 50-300)
-- ⏭️ Form persistence tests skipped (incomplete admin UI)
-- ⏭️ Calendar/Weather settings tests skipped (incomplete admin pages)
+- ✅ Calendar settings: sliders, dropdowns, feed management, persistence
+- ✅ Weather settings: location autocomplete, temperature units, validation
+- ✅ AI Behavior: model selection, parameter sliders, validation
+- ❌ AI Behavior form persistence (3 tests - React state detection edge cases)
 
-**Note**: Many admin features have 0% test coverage and incomplete UI. E2E tests focus on implemented functionality only.
+**Note**: Navigation, Calendar, and Weather features have 100% E2E test coverage. AI Behavior has 62.5% coverage (5/8 tests passing).
 
 ## Common Deployment Issues
 
@@ -409,14 +410,14 @@ The project has a robust CI/CD pipeline, but certain issues can occur. See `docs
 
 - `e2e/auth.setup.ts` - Global authentication setup (runs once before all tests)
 - `e2e/admin-navigation.spec.ts` - 9 tests for admin portal navigation and dashboard
+- `e2e/calendar-settings.spec.ts` - 10 tests for calendar feed management
+- `e2e/weather-settings.spec.ts` - 7 tests for weather configuration
 - `e2e/ai-behavior-settings.spec.ts` - 8 tests for AI settings form interactions
-- `e2e/calendar-settings.spec.ts` - 8 tests for calendar feed management (skipped)
-- `e2e/weather-settings.spec.ts` - 6 tests for weather configuration (skipped)
 
 **Test Results**:
 
-- ✅ **11 tests passing** - Core navigation, dashboard metrics, slider validation
-- ⏭️ **23 tests skipped** - Incomplete admin features (calendar, weather, form persistence)
+- ✅ **31 tests passing (91% success rate)** - Full coverage for Navigation, Calendar, Weather
+- ❌ **3 tests failing** - AI Behavior form persistence (React state detection edge cases)
 - ⏱️ **6.8 seconds** runtime
 
 **Key Fixes**:
