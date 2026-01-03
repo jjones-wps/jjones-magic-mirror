@@ -143,6 +143,8 @@ export default function Weather() {
     if (!settings) return; // Wait for settings to load
 
     async function loadWeather() {
+      if (!settings) return; // Guard against null settings
+
       try {
         const lat = parseFloat(settings.latitude);
         const lon = parseFloat(settings.longitude);
