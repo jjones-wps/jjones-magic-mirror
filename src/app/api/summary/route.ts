@@ -19,37 +19,52 @@ interface SummaryResponse {
 // Context data types for AI summary generation
 interface WeatherCurrent {
   temperature: number;
+  feelsLike: number;
   weatherCode: number;
+  windSpeed: number;
+}
+
+interface WeatherDaily {
+  date: string;
+  tempHigh: number;
+  tempLow: number;
+  weatherCode: number;
+  precipitationProbability: number;
 }
 
 interface WeatherData {
+  location?: string;
   current?: WeatherCurrent;
-  daily?: Array<{
-    precipitationProbability?: number;
-  }>;
+  daily?: WeatherDaily[];
 }
 
 interface CalendarEvent {
   title: string;
+  start: string; // ISO string
+  end: string; // ISO string
+  allDay: boolean;
 }
 
 interface CalendarData {
   todayEvents?: CalendarEvent[];
+  tomorrowEvents?: CalendarEvent[];
 }
 
-interface NewsArticle {
-  title: string;
-  description?: string;
+interface CommuteRoute {
+  name: string;
+  durationMinutes: number;
+  trafficDelayMinutes: number;
+  trafficStatus: 'light' | 'moderate' | 'heavy';
 }
 
-interface NewsData {
-  articles?: NewsArticle[];
+interface CommuteData {
+  commutes?: CommuteRoute[];
 }
 
 interface ContextData {
   weather: WeatherData | null;
   calendar: CalendarData | null;
-  news: NewsData | null;
+  commute: CommuteData | null;
 }
 
 // ============================================
@@ -69,16 +84,16 @@ function getGreeting(): string {
 // ============================================
 
 async function fetchContextData(baseUrl: string): Promise<ContextData> {
-  const [weatherRes, calendarRes, newsRes] = await Promise.all([
+  const [weatherRes, calendarRes, commuteRes] = await Promise.all([
     fetch(`${baseUrl}/api/weather`).catch(() => null),
     fetch(`${baseUrl}/api/calendar`).catch(() => null),
-    fetch(`${baseUrl}/api/news`).catch(() => null),
+    fetch(`${baseUrl}/api/commute`).catch(() => null),
   ]);
 
   return {
     weather: weatherRes?.ok ? await weatherRes.json() : null,
     calendar: calendarRes?.ok ? await calendarRes.json() : null,
-    news: newsRes?.ok ? await newsRes.json() : null,
+    commute: commuteRes?.ok ? await commuteRes.json() : null,
   };
 }
 
@@ -147,6 +162,24 @@ function getWeatherDescription(code: number): string {
     95: 'Thunderstorms',
   };
   return descriptions[code] || 'Variable conditions';
+}
+
+function getPrecipitationType(code: number): string {
+  // Snow codes: 71-77, 85-86
+  if (code >= 71 && code <= 77) return 'snow';
+  if (code === 85 || code === 86) return 'snow showers';
+
+  // Rain codes: 51-67, 80-82
+  if (code >= 51 && code <= 67) return 'rain';
+  if (code >= 80 && code <= 82) return 'rain';
+
+  // Thunderstorms: 95-99
+  if (code >= 95) return 'thunderstorms';
+
+  // Freezing rain/drizzle: 56-57, 66-67
+  if (code === 56 || code === 57 || code === 66 || code === 67) return 'freezing rain';
+
+  return 'precipitation';
 }
 
 function getContextualTip(weather: WeatherCurrent, eventCount: number): string | null {
@@ -243,37 +276,118 @@ function getTimeOfDay(): string {
 }
 
 function buildPrompt(context: ContextData): string {
+  const now = new Date();
   const timeOfDay = getTimeOfDay();
-  const parts: string[] = [`Generate a brief ${timeOfDay} briefing based on:`];
+  const hour = now.getHours();
+  const isEvening = hour >= 17;
+  const isWeekend = now.getDay() === 0 || now.getDay() === 6;
+  const isWeekdayMorning = !isWeekend && hour >= 6 && hour <= 9;
 
-  if (context.weather?.current) {
-    parts.push(
-      `Weather: ${context.weather.current.temperature}°F, ${getWeatherDescription(context.weather.current.weatherCode)}`
-    );
+  // Day and date context
+  const dayName = now.toLocaleDateString('en-US', { weekday: 'long' });
+  const dateStr = now.toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
+
+  const parts: string[] = [
+    `Generate a brief ${timeOfDay} briefing for ${dayName}, ${dateStr} based on:`,
+  ];
+
+  // Weekend detection
+  if (isWeekend) {
+    parts.push(`Note: It's the weekend!`);
   }
 
+  // Weather context
+  if (context.weather?.current) {
+    const { temperature, feelsLike, weatherCode, windSpeed } = context.weather.current;
+    const location = context.weather.location || 'your location';
+    const conditions = getWeatherDescription(weatherCode);
+
+    let weatherLine = `Weather in ${location}: ${temperature}°F, ${conditions}`;
+
+    // Add feels-like if differs by more than 5 degrees
+    if (Math.abs(temperature - feelsLike) > 5) {
+      weatherLine += ` (feels like ${feelsLike}°F)`;
+    }
+
+    // Add wind if noteworthy (>15mph)
+    if (windSpeed > 15) {
+      weatherLine += `, winds at ${windSpeed}mph`;
+    }
+
+    parts.push(weatherLine);
+
+    // Precipitation probability with type
+    if (context.weather.daily && context.weather.daily.length > 0) {
+      const todayForecast = context.weather.daily[0];
+      if (todayForecast.precipitationProbability >= 30) {
+        const precipType = getPrecipitationType(todayForecast.weatherCode);
+        parts.push(`${todayForecast.precipitationProbability}% chance of ${precipType} today`);
+      }
+    }
+
+    // Tomorrow's weather (evening briefings only)
+    if (isEvening && context.weather.daily && context.weather.daily.length > 1) {
+      const tomorrow = context.weather.daily[1];
+      parts.push(`Tomorrow: High ${tomorrow.tempHigh}°F, Low ${tomorrow.tempLow}°F`);
+    }
+  }
+
+  // Calendar context with timing
   if (context.calendar?.todayEvents && context.calendar.todayEvents.length > 0) {
-    const events = context.calendar.todayEvents
-      .slice(0, 3)
-      .map((e: CalendarEvent) => e.title)
-      .join(', ');
-    parts.push(`Today's events: ${events}`);
+    const events = context.calendar.todayEvents.slice(0, 5);
+    const eventLines: string[] = [];
+
+    events.forEach((event) => {
+      if (event.allDay) {
+        eventLines.push(`${event.title} (all day)`);
+      } else {
+        const startTime = new Date(event.start);
+        const timeStr = startTime.toLocaleTimeString('en-US', {
+          hour: 'numeric',
+          minute: '2-digit',
+          hour12: true,
+        });
+
+        // Calculate time until event
+        const hoursUntil = (startTime.getTime() - now.getTime()) / (1000 * 60 * 60);
+        if (hoursUntil > 0 && hoursUntil < 3) {
+          const minutesUntil = Math.round(hoursUntil * 60);
+          eventLines.push(`${event.title} at ${timeStr} (in ${minutesUntil} min)`);
+        } else {
+          eventLines.push(`${event.title} at ${timeStr}`);
+        }
+      }
+    });
+
+    parts.push(`Today's schedule:\n${eventLines.map((e) => `- ${e}`).join('\n')}`);
   } else {
     parts.push('No events scheduled today.');
   }
 
-  if (context.news?.articles && context.news.articles.length > 0) {
-    const newsItems = context.news.articles
-      .slice(0, 3)
-      .map((a: NewsArticle) => {
-        const desc = a.description ? ` - ${a.description}` : '';
-        return `• ${a.title}${desc}`;
-      })
-      .join('\n');
-    parts.push(`Top news:\n${newsItems}`);
+  // Commute intelligence (weekday mornings only)
+  if (isWeekdayMorning && context.commute?.commutes && context.commute.commutes.length > 0) {
+    const primaryCommute = context.commute.commutes[0];
+    const baselineMinutes = 22; // TODO: Make this configurable or calculated
+    const currentMinutes = primaryCommute.durationMinutes;
+    const deviation = currentMinutes - baselineMinutes;
+
+    if (Math.abs(deviation) >= 3) {
+      if (deviation > 0) {
+        parts.push(
+          `Traffic alert: Your commute is running ${Math.round(deviation)} minutes longer than usual (${currentMinutes} min total)`
+        );
+      } else {
+        parts.push(
+          `Good news: Traffic is light! Your commute is about ${Math.abs(Math.round(deviation))} minutes faster than usual (${currentMinutes} min)`
+        );
+      }
+    } else {
+      // Normal traffic, but still mention duration
+      parts.push(`Commute time: ${currentMinutes} minutes with current traffic`);
+    }
   }
 
-  return parts.join('\n');
+  return parts.join('\n\n');
 }
 
 // ============================================

@@ -46,18 +46,20 @@ const mockCalendarResponse = {
   lastUpdated: '2024-01-15T12:00:00Z',
 };
 
-const mockNewsResponse = {
-  articles: [
+const mockCommuteResponse = {
+  commutes: [
     {
-      id: 'article-1',
-      title: 'Breaking News Story',
-      source: 'BBC',
-      link: 'https://example.com/article-1',
-      pubDate: '2024-01-15T10:00:00Z',
-      description: 'This is a test article with details',
+      name: 'Jack',
+      durationMinutes: 25,
+      distanceMiles: 12.5,
+      trafficDelayMinutes: 3,
+      trafficStatus: 'light' as const,
+      suggestedDepartureTime: '2024-01-15T07:35:00Z',
+      targetArrivalTime: '08:00',
     },
   ],
   lastUpdated: '2024-01-15T12:00:00Z',
+  isDemo: false,
 };
 
 const mockOpenRouterResponse = {
@@ -103,7 +105,7 @@ describe('GET /api/summary', () => {
     (global.fetch as jest.Mock)
       .mockResolvedValueOnce({ ok: true, json: async () => mockWeatherResponse })
       .mockResolvedValueOnce({ ok: true, json: async () => mockCalendarResponse })
-      .mockResolvedValueOnce({ ok: true, json: async () => mockNewsResponse });
+      .mockResolvedValueOnce({ ok: true, json: async () => mockCommuteResponse });
 
     const mockRequest = new Request('http://localhost:3000/api/summary');
     const response = await GET(mockRequest);
@@ -125,7 +127,7 @@ describe('GET /api/summary', () => {
     (global.fetch as jest.Mock)
       .mockResolvedValueOnce({ ok: true, json: async () => mockWeatherResponse })
       .mockResolvedValueOnce({ ok: true, json: async () => mockCalendarResponse })
-      .mockResolvedValueOnce({ ok: true, json: async () => mockNewsResponse })
+      .mockResolvedValueOnce({ ok: true, json: async () => mockCommuteResponse })
       .mockResolvedValueOnce({ ok: true, json: async () => mockOpenRouterResponse });
 
     const mockRequest = new Request('http://localhost:3000/api/summary');
@@ -153,7 +155,7 @@ describe('GET /api/summary', () => {
     (global.fetch as jest.Mock)
       .mockResolvedValueOnce({ ok: true, json: async () => mockWeatherResponse })
       .mockResolvedValueOnce({ ok: true, json: async () => mockCalendarResponse })
-      .mockResolvedValueOnce({ ok: true, json: async () => mockNewsResponse })
+      .mockResolvedValueOnce({ ok: true, json: async () => mockCommuteResponse })
       .mockResolvedValueOnce({ ok: false, status: 500, text: async () => 'Server error' });
 
     const mockRequest = new Request('http://localhost:3000/api/summary');
@@ -167,7 +169,7 @@ describe('GET /api/summary', () => {
   it('should return correct greeting for different times of day', async () => {
     delete process.env.OPENROUTER_API_KEY;
 
-    const mockFetch = (global.fetch as jest.Mock);
+    const mockFetch = global.fetch as jest.Mock;
 
     // Helper to set up mocks for each test
     const setupMocks = () => {
@@ -225,7 +227,7 @@ describe('GET /api/summary', () => {
         ok: true,
         json: async () => ({ ...mockCalendarResponse, todayEvents: [] }),
       })
-      .mockResolvedValueOnce({ ok: true, json: async () => mockNewsResponse });
+      .mockResolvedValueOnce({ ok: true, json: async () => mockCommuteResponse });
 
     const mockRequest = new Request('http://localhost:3000/api/summary');
     const response = await GET(mockRequest);
@@ -249,7 +251,7 @@ describe('GET /api/summary', () => {
     (global.fetch as jest.Mock)
       .mockResolvedValueOnce({ ok: true, json: async () => mockWeatherResponse })
       .mockResolvedValueOnce({ ok: true, json: async () => multipleEvents })
-      .mockResolvedValueOnce({ ok: true, json: async () => mockNewsResponse });
+      .mockResolvedValueOnce({ ok: true, json: async () => mockCommuteResponse });
 
     const mockRequest = new Request('http://localhost:3000/api/summary');
     const response = await GET(mockRequest);
@@ -274,7 +276,7 @@ describe('GET /api/summary', () => {
     (global.fetch as jest.Mock)
       .mockResolvedValueOnce({ ok: true, json: async () => rainyWeather })
       .mockResolvedValueOnce({ ok: true, json: async () => mockCalendarResponse })
-      .mockResolvedValueOnce({ ok: true, json: async () => mockNewsResponse });
+      .mockResolvedValueOnce({ ok: true, json: async () => mockCommuteResponse });
 
     const mockRequest = new Request('http://localhost:3000/api/summary');
     const response = await GET(mockRequest);
@@ -289,7 +291,7 @@ describe('GET /api/summary', () => {
     (global.fetch as jest.Mock)
       .mockResolvedValueOnce({ ok: false, status: 500 })
       .mockResolvedValueOnce({ ok: true, json: async () => mockCalendarResponse })
-      .mockResolvedValueOnce({ ok: true, json: async () => mockNewsResponse });
+      .mockResolvedValueOnce({ ok: true, json: async () => mockCommuteResponse });
 
     const mockRequest = new Request('http://localhost:3000/api/summary');
     const response = await GET(mockRequest);
@@ -307,7 +309,7 @@ describe('GET /api/summary', () => {
     (global.fetch as jest.Mock)
       .mockResolvedValueOnce({ ok: true, json: async () => mockWeatherResponse })
       .mockResolvedValueOnce({ ok: false, status: 500 })
-      .mockResolvedValueOnce({ ok: true, json: async () => mockNewsResponse });
+      .mockResolvedValueOnce({ ok: true, json: async () => mockCommuteResponse });
 
     const mockRequest = new Request('http://localhost:3000/api/summary');
     const response = await GET(mockRequest);
@@ -331,7 +333,7 @@ describe('GET /api/summary', () => {
     (global.fetch as jest.Mock)
       .mockResolvedValueOnce({ ok: true, json: async () => coldWeather })
       .mockResolvedValueOnce({ ok: true, json: async () => mockCalendarResponse })
-      .mockResolvedValueOnce({ ok: true, json: async () => mockNewsResponse });
+      .mockResolvedValueOnce({ ok: true, json: async () => mockCommuteResponse });
 
     const mockRequest = new Request('http://localhost:3000/api/summary');
     const response = await GET(mockRequest);
@@ -348,7 +350,7 @@ describe('GET /api/summary', () => {
     (global.fetch as jest.Mock)
       .mockResolvedValueOnce({ ok: true, json: async () => mockWeatherResponse })
       .mockResolvedValueOnce({ ok: true, json: async () => mockCalendarResponse })
-      .mockResolvedValueOnce({ ok: true, json: async () => mockNewsResponse })
+      .mockResolvedValueOnce({ ok: true, json: async () => mockCommuteResponse })
       .mockResolvedValueOnce({ ok: true, json: async () => mockOpenRouterResponse });
 
     const mockRequest = new Request('http://localhost:3000/api/summary');
@@ -373,7 +375,7 @@ describe('GET /api/summary', () => {
     (global.fetch as jest.Mock)
       .mockResolvedValueOnce({ ok: true, json: async () => mockWeatherResponse })
       .mockResolvedValueOnce({ ok: true, json: async () => mockCalendarResponse })
-      .mockResolvedValueOnce({ ok: true, json: async () => mockNewsResponse })
+      .mockResolvedValueOnce({ ok: true, json: async () => mockCommuteResponse })
       .mockResolvedValueOnce({ ok: true, json: async () => mockOpenRouterResponse });
 
     const mockRequest = new Request('http://localhost:3000/api/summary');
@@ -387,36 +389,13 @@ describe('GET /api/summary', () => {
     expect(body.model).toBe('anthropic/claude-3-haiku');
   });
 
-  it('should include news descriptions in AI prompt', async () => {
-    process.env.OPENROUTER_API_KEY = 'test-api-key';
-
-    (global.fetch as jest.Mock)
-      .mockResolvedValueOnce({ ok: true, json: async () => mockWeatherResponse })
-      .mockResolvedValueOnce({ ok: true, json: async () => mockCalendarResponse })
-      .mockResolvedValueOnce({ ok: true, json: async () => mockNewsResponse })
-      .mockResolvedValueOnce({ ok: true, json: async () => mockOpenRouterResponse });
-
-    const mockRequest = new Request('http://localhost:3000/api/summary');
-    await GET(mockRequest);
-
-    const openRouterCall = (global.fetch as jest.Mock).mock.calls.find((call) =>
-      call[0].includes('openrouter.ai')
-    );
-
-    const body = JSON.parse(openRouterCall[1].body);
-    const userMessage = body.messages.find((m: { role: string }) => m.role === 'user');
-
-    expect(userMessage.content).toContain('Breaking News Story');
-    expect(userMessage.content).toContain('This is a test article with details');
-  });
-
   it('should include lastUpdated timestamp', async () => {
     delete process.env.OPENROUTER_API_KEY;
 
     (global.fetch as jest.Mock)
       .mockResolvedValueOnce({ ok: true, json: async () => mockWeatherResponse })
       .mockResolvedValueOnce({ ok: true, json: async () => mockCalendarResponse })
-      .mockResolvedValueOnce({ ok: true, json: async () => mockNewsResponse });
+      .mockResolvedValueOnce({ ok: true, json: async () => mockCommuteResponse });
 
     const before = new Date();
     const mockRequest = new Request('http://localhost:3000/api/summary');
