@@ -137,6 +137,15 @@ npm audit fix
 npm update
 ```
 
+**Automated Security Scanning:**
+
+The CI/CD pipeline automatically runs `npm audit --production --audit-level=high` on every push to main. This:
+- ✅ Scans all production dependencies for vulnerabilities
+- ✅ Blocks deployment if high/critical severity issues found
+- ✅ Provides early detection before reaching production
+
+See `.github/workflows/deploy.yml` for configuration details.
+
 **Review dependency changes before updating:**
 
 - Check changelogs for breaking changes

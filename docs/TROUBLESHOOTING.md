@@ -440,6 +440,71 @@ sudo ./svc.sh start
 
 ---
 
+## Issue 8: npm audit Blocks Deployment
+
+### Error Message
+```
+npm audit --production --audit-level=high
+# High severity vulnerability detected in package-name
+❌ Security audit step failed
+```
+
+### Cause
+A high or critical severity vulnerability was discovered in a production dependency, blocking the CI pipeline from deploying.
+
+### Solutions
+
+#### Solution 1: Update Vulnerable Package (Recommended)
+```bash
+# On local machine
+npm audit fix
+
+# Test the fix
+npm test
+npm run build
+
+# Commit and push
+git add package.json package-lock.json
+git commit -m "fix: update vulnerable dependency (security)"
+git push
+```
+
+#### Solution 2: Manual Update (if npm audit fix doesn't work)
+```bash
+# Update specific package
+npm install package-name@latest
+
+# Test thoroughly
+npm test
+npm run build
+
+# Commit
+git commit -am "fix: manually update package-name to resolve CVE-XXXX-XXXX"
+git push
+```
+
+#### Solution 3: Emergency Bypass (Use Sparingly)
+For **critical hotfixes** that cannot wait for dependency patches:
+
+```bash
+# Commit with [skip-audit] flag in message
+git commit -m "fix: critical production issue [skip-audit]"
+git push
+```
+
+**⚠️ Warning:** This bypasses security checks. File a follow-up issue to address the vulnerability.
+
+### Prevention
+- Enable Dependabot alerts in repository settings
+- Review `npm audit` output weekly
+- Keep dependencies up to date proactively
+
+### Related Documentation
+- See `.github/workflows/deploy.yml` for audit configuration
+- See `SECURITY.md` for security best practices
+
+---
+
 ## Monitoring Deployments
 
 ### GitHub Actions UI

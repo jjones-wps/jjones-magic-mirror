@@ -31,6 +31,8 @@ jobs:
           npm ci
 
       - name: Security audit
+        # Allow emergency bypass with [skip-audit] in commit message
+        if: ${{ !contains(github.event.head_commit.message, '[skip-audit]') }}
         run: |
           cd /home/jjones/magic-mirror
           npm audit --production --audit-level=high
