@@ -348,7 +348,7 @@ graph LR
 - **Tailwind CSS:** https://tailwindcss.com/docs
 - **Framer Motion:** https://www.framer.com/motion/
 - **Open-Meteo API:** https://open-meteo.com/en/docs
-- **TomTom Routing:** https://developer.tomtom.com/routing-api/documentation
+- **TomTom Routing:** https://developer.tomtom.com/routing-api/documentation/tomtom-maps/routing-service
 - **Spotify API:** https://developer.spotify.com/documentation/web-api
 
 ---
