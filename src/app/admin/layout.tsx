@@ -11,6 +11,7 @@ const navigation = [
   { name: 'Calendar', href: '/admin/calendar', icon: '◫' },
   { name: 'Weather', href: '/admin/weather', icon: '◐' },
   { name: 'Commute', href: '/admin/commute', icon: '→' },
+  { name: 'AI Summary', href: '/admin/ai-summary', icon: '◈' },
   { name: 'System', href: '/admin/system', icon: '⚙' },
 ];
 
