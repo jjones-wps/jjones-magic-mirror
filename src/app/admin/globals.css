@@ -72,6 +72,40 @@
   -moz-osx-font-smoothing: grayscale;
   cursor: auto;
   user-select: auto;
+  overflow-y: auto; /* Allow vertical scrolling */
+  overflow-x: hidden; /* Prevent horizontal scrolling */
+}
+
+/* Override mirror display's no-scroll body */
+body:has(.admin-portal) {
+  overflow: auto !important;
+  overflow-x: hidden;
+  cursor: auto !important;
+  user-select: auto !important;
+}
+
+/* Re-enable scrollbars for admin portal */
+.admin-portal ::-webkit-scrollbar {
+  display: block;
+  width: 8px;
+}
+
+.admin-portal ::-webkit-scrollbar-track {
+  background: var(--admin-bg);
+}
+
+.admin-portal ::-webkit-scrollbar-thumb {
+  background: var(--admin-border);
+  border-radius: 4px;
+}
+
+.admin-portal ::-webkit-scrollbar-thumb:hover {
+  background: var(--admin-text-tertiary);
+}
+
+.admin-portal * {
+  scrollbar-width: thin;
+  scrollbar-color: var(--admin-border) var(--admin-bg);
 }
 
 /* Override mirror's cursor hiding for admin */
