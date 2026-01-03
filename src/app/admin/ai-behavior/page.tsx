@@ -19,31 +19,32 @@ export default function AIBehaviorSettingsPage() {
   const [saving, setSaving] = useState(false);
   const { toasts, closeToast, success, error } = useToast();
 
-  const fetchSettings = useCallback(async () => {
-    try {
-      setLoading(true);
-      const response = await fetch('/api/admin/ai-behavior');
-      if (!response.ok) {
-        if (response.status === 404) {
-          setSettings(DEFAULT_AI_BEHAVIOR);
-          setOriginalSettings(DEFAULT_AI_BEHAVIOR);
-          return;
-        }
-        throw new Error('Failed to fetch AI behavior settings');
-      }
-      const data = await response.json();
-      setSettings(data);
-      setOriginalSettings(data);
-    } catch (err) {
-      error('Failed to load settings', err instanceof Error ? err.message : 'Unknown error');
-    } finally {
-      setLoading(false);
-    }
-  }, [error]);
-
   useEffect(() => {
+    const fetchSettings = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch('/api/admin/ai-behavior');
+        if (!response.ok) {
+          if (response.status === 404) {
+            setSettings(DEFAULT_AI_BEHAVIOR);
+            setOriginalSettings(DEFAULT_AI_BEHAVIOR);
+            return;
+          }
+          throw new Error('Failed to fetch AI behavior settings');
+        }
+        const data = await response.json();
+        setSettings(data);
+        setOriginalSettings(data);
+      } catch (err) {
+        error('Failed to load settings', err instanceof Error ? err.message : 'Unknown error');
+      } finally {
+        setLoading(false);
+      }
+    };
+
     fetchSettings();
-  }, [fetchSettings]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only fetch once on mount
 
   const hasUnsavedChanges = () => {
     return JSON.stringify(settings) !== JSON.stringify(originalSettings);
