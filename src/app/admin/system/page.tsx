@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useToast, ToastContainer } from '@/components/admin/Toast';
 
 interface SystemStatus {
   status: {
@@ -32,8 +33,7 @@ export default function SystemPage() {
   const [systemStatus, setSystemStatus] = useState<SystemStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [inlineError, setInlineError] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const { toasts, closeToast, success, error } = useToast();
 
   // Fetch system status on mount and every 5 seconds
   useEffect(() => {
@@ -52,7 +52,7 @@ export default function SystemPage() {
       setSystemStatus(data);
       setLoading(false);
     } catch (err) {
-      setInlineError(err instanceof Error ? err.message : 'Failed to load system status');
+      error('Failed to load system status', err instanceof Error ? err.message : 'Unknown error');
       setLoading(false);
     }
   };
@@ -60,8 +60,6 @@ export default function SystemPage() {
   const handleForceRefresh = async () => {
     try {
       setRefreshing(true);
-      setInlineError(null);
-      setSuccessMessage(null);
 
       const response = await fetch('/api/admin/mirror/refresh', {
         method: 'POST',
@@ -72,14 +70,12 @@ export default function SystemPage() {
       }
 
       const data = await response.json();
-      setSuccessMessage(data.message || 'Mirror refresh triggered successfully');
-      setTimeout(() => setSuccessMessage(null), 5000);
+      success('Mirror refreshed', data.message || 'Mirror refresh triggered successfully');
 
       // Refresh status immediately
       await fetchSystemStatus();
     } catch (err) {
-      setInlineError(err instanceof Error ? err.message : 'Failed to trigger refresh');
-      setTimeout(() => setInlineError(null), 5000);
+      error('Failed to trigger refresh', err instanceof Error ? err.message : 'Unknown error');
     } finally {
       setRefreshing(false);
     }
@@ -184,38 +180,6 @@ export default function SystemPage() {
           {refreshing ? '⟳ Refreshing...' : '⟳ Force Refresh'}
         </button>
       </div>
-
-      {/* Error Message */}
-      {inlineError && (
-        <div
-          style={{
-            padding: 'var(--space-md)',
-            background: 'rgba(239, 68, 68, 0.1)',
-            border: '1px solid var(--admin-error)',
-            borderRadius: 'var(--radius-md)',
-            color: 'var(--admin-error)',
-            marginBottom: 'var(--space-lg)',
-          }}
-        >
-          {inlineError}
-        </div>
-      )}
-
-      {/* Success Message */}
-      {successMessage && (
-        <div
-          style={{
-            padding: 'var(--space-md)',
-            background: 'rgba(16, 185, 129, 0.1)',
-            border: '1px solid var(--admin-success)',
-            borderRadius: 'var(--radius-md)',
-            color: 'var(--admin-success)',
-            marginBottom: 'var(--space-lg)',
-          }}
-        >
-          {successMessage}
-        </div>
-      )}
 
       {/* Status Cards Grid */}
       <div
@@ -573,6 +537,9 @@ export default function SystemPage() {
           </div>
         )}
       </div>
+
+      {/* Toast Notifications */}
+      <ToastContainer toasts={toasts} onClose={closeToast} />
     </div>
   );
 }

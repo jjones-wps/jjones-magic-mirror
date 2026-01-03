@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useToast, ToastContainer } from '@/components/admin/Toast';
 
 interface CommuteRoute {
   id: string;
@@ -30,9 +31,8 @@ export default function CommuteRoutesPage() {
   const [routes, setRoutes] = useState<CommuteRoute[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [inlineError, setInlineError] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
+  const { toasts, closeToast, success, error } = useToast();
 
   // New route form state
   const [newRoute, setNewRoute] = useState({
@@ -60,7 +60,7 @@ export default function CommuteRoutesPage() {
       const data = await response.json();
       setRoutes(data.routes);
     } catch (err) {
-      setInlineError(err instanceof Error ? err.message : 'Failed to load commute routes');
+      error('Failed to load routes', err instanceof Error ? err.message : 'Unknown error');
     } finally {
       setLoading(false);
     }
@@ -69,8 +69,6 @@ export default function CommuteRoutesPage() {
   const handleAddRoute = async () => {
     try {
       setSaving(true);
-      setInlineError(null);
-      setSuccessMessage(null);
 
       // Validate form
       if (!newRoute.name.trim()) {
@@ -109,11 +107,9 @@ export default function CommuteRoutesPage() {
         arrivalTime: '08:00',
         daysActive: [1, 2, 3, 4, 5],
       });
-      setSuccessMessage('Commute route added successfully');
-      setTimeout(() => setSuccessMessage(null), 3000);
+      success('Route added', 'Commute route added successfully');
     } catch (err) {
-      setInlineError(err instanceof Error ? err.message : 'Failed to add commute route');
-      setTimeout(() => setInlineError(null), 5000);
+      error('Failed to add route', err instanceof Error ? err.message : 'Unknown error');
     } finally {
       setSaving(false);
     }
@@ -136,9 +132,9 @@ export default function CommuteRoutesPage() {
       setRoutes((prevRoutes) =>
         prevRoutes.map((route) => (route.id === id ? { ...route, enabled } : route))
       );
+      success('Route updated', `Route ${enabled ? 'enabled' : 'disabled'} successfully`);
     } catch (err) {
-      setInlineError(err instanceof Error ? err.message : 'Failed to update route');
-      setTimeout(() => setInlineError(null), 5000);
+      error('Failed to update route', err instanceof Error ? err.message : 'Unknown error');
     }
   };
 
@@ -157,11 +153,9 @@ export default function CommuteRoutesPage() {
       }
 
       setRoutes((prevRoutes) => prevRoutes.filter((route) => route.id !== id));
-      setSuccessMessage('Route deleted successfully');
-      setTimeout(() => setSuccessMessage(null), 3000);
+      success('Route deleted', 'Commute route deleted successfully');
     } catch (err) {
-      setInlineError(err instanceof Error ? err.message : 'Failed to delete route');
-      setTimeout(() => setInlineError(null), 5000);
+      error('Failed to delete route', err instanceof Error ? err.message : 'Unknown error');
     }
   };
 
@@ -238,38 +232,6 @@ export default function CommuteRoutesPage() {
           + Add Route
         </button>
       </div>
-
-      {/* Error Message */}
-      {inlineError && (
-        <div
-          style={{
-            padding: 'var(--space-md)',
-            background: 'rgba(239, 68, 68, 0.1)',
-            border: '1px solid var(--admin-error)',
-            borderRadius: 'var(--radius-md)',
-            color: 'var(--admin-error)',
-            marginBottom: 'var(--space-lg)',
-          }}
-        >
-          {inlineError}
-        </div>
-      )}
-
-      {/* Success Message */}
-      {successMessage && (
-        <div
-          style={{
-            padding: 'var(--space-md)',
-            background: 'rgba(16, 185, 129, 0.1)',
-            border: '1px solid var(--admin-success)',
-            borderRadius: 'var(--radius-md)',
-            color: 'var(--admin-success)',
-            marginBottom: 'var(--space-lg)',
-          }}
-        >
-          {successMessage}
-        </div>
-      )}
 
       {/* Routes List */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-md)' }}>
@@ -776,6 +738,9 @@ export default function CommuteRoutesPage() {
           </div>
         </div>
       )}
+
+      {/* Toast Notifications */}
+      <ToastContainer toasts={toasts} onClose={closeToast} />
     </div>
   );
 }

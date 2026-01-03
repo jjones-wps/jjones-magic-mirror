@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import LocationAutocomplete from '@/components/admin/LocationAutocomplete';
+import { useToast, ToastContainer } from '@/components/admin/Toast';
 
 interface WeatherSettings {
   latitude: string;
@@ -25,8 +26,7 @@ export default function WeatherSettingsPage() {
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [inlineError, setInlineError] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const { toasts, closeToast, success, error } = useToast();
 
   // Fetch current settings on mount
   useEffect(() => {
@@ -44,7 +44,7 @@ export default function WeatherSettingsPage() {
       setSettings(data);
       setOriginalSettings(data);
     } catch (err) {
-      setInlineError(err instanceof Error ? err.message : 'Failed to load weather settings');
+      error('Failed to load settings', err instanceof Error ? err.message : 'Unknown error');
     } finally {
       setLoading(false);
     }
@@ -62,8 +62,6 @@ export default function WeatherSettingsPage() {
   const handleSave = async () => {
     try {
       setSaving(true);
-      setInlineError(null);
-      setSuccessMessage(null);
 
       const response = await fetch('/api/admin/weather', {
         method: 'PUT',
@@ -77,11 +75,9 @@ export default function WeatherSettingsPage() {
       }
 
       setOriginalSettings(settings);
-      setSuccessMessage('Weather settings saved successfully');
-      setTimeout(() => setSuccessMessage(null), 3000);
+      success('Settings saved', 'Weather settings updated successfully');
     } catch (err) {
-      setInlineError(err instanceof Error ? err.message : 'Failed to save weather settings');
-      setTimeout(() => setInlineError(null), 5000);
+      error('Failed to save settings', err instanceof Error ? err.message : 'Unknown error');
     } finally {
       setSaving(false);
     }
@@ -89,8 +85,6 @@ export default function WeatherSettingsPage() {
 
   const handleReset = () => {
     setSettings(originalSettings);
-    setInlineError(null);
-    setSuccessMessage(null);
   };
 
   if (loading) {
@@ -127,38 +121,6 @@ export default function WeatherSettingsPage() {
           Configure location and temperature units for weather display
         </p>
       </div>
-
-      {/* Error Message */}
-      {inlineError && (
-        <div
-          style={{
-            padding: 'var(--space-md)',
-            background: 'rgba(239, 68, 68, 0.1)',
-            border: '1px solid var(--admin-error)',
-            borderRadius: 'var(--radius-md)',
-            color: 'var(--admin-error)',
-            marginBottom: 'var(--space-lg)',
-          }}
-        >
-          {inlineError}
-        </div>
-      )}
-
-      {/* Success Message */}
-      {successMessage && (
-        <div
-          style={{
-            padding: 'var(--space-md)',
-            background: 'rgba(16, 185, 129, 0.1)',
-            border: '1px solid var(--admin-success)',
-            borderRadius: 'var(--radius-md)',
-            color: 'var(--admin-success)',
-            marginBottom: 'var(--space-lg)',
-          }}
-        >
-          {successMessage}
-        </div>
-      )}
 
       {/* Settings Form */}
       <div
@@ -379,45 +341,16 @@ export default function WeatherSettingsPage() {
         </div>
 
         {/* Action Buttons */}
-        <div
-          style={{
-            display: 'flex',
-            gap: 'var(--space-md)',
-            paddingTop: 'var(--space-lg)',
-            borderTop: '1px solid var(--admin-border)',
-          }}
-        >
+        <div className="action-buttons sticky">
           <button
             onClick={handleSave}
-            disabled={saving || !hasUnsavedChanges()}
-            style={{
-              padding: 'var(--space-sm) var(--space-lg)',
-              background: hasUnsavedChanges() ? 'var(--admin-primary)' : 'var(--admin-border)',
-              color: hasUnsavedChanges() ? 'white' : 'var(--admin-text-tertiary)',
-              border: 'none',
-              borderRadius: 'var(--radius-md)',
-              fontWeight: 500,
-              cursor: hasUnsavedChanges() && !saving ? 'pointer' : 'not-allowed',
-              opacity: saving ? 0.6 : 1,
-            }}
+            disabled={!hasUnsavedChanges() || saving}
+            className="btn-primary"
           >
+            {saving && <span className="spinner" />}
             {saving ? 'Saving...' : 'Save Changes'}
           </button>
-
-          <button
-            onClick={handleReset}
-            disabled={!hasUnsavedChanges()}
-            style={{
-              padding: 'var(--space-sm) var(--space-lg)',
-              background: 'transparent',
-              color: 'var(--admin-text-secondary)',
-              border: '1px solid var(--admin-border)',
-              borderRadius: 'var(--radius-md)',
-              fontWeight: 500,
-              cursor: hasUnsavedChanges() ? 'pointer' : 'not-allowed',
-              opacity: hasUnsavedChanges() ? 1 : 0.5,
-            }}
-          >
+          <button onClick={handleReset} disabled={!hasUnsavedChanges()} className="btn-secondary">
             Reset
           </button>
         </div>
@@ -457,6 +390,9 @@ export default function WeatherSettingsPage() {
           <li>Copy the latitude and longitude values</li>
         </ul>
       </div>
+
+      {/* Toast Notifications */}
+      <ToastContainer toasts={toasts} onClose={closeToast} />
     </div>
   );
 }

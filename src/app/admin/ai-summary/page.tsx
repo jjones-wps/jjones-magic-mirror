@@ -14,6 +14,7 @@
  */
 
 import { useState, useEffect } from 'react';
+import { useToast, ToastContainer } from '@/components/admin/Toast';
 
 interface AISummarySettings {
   // Weather context toggles
@@ -59,8 +60,7 @@ export default function AISummarySettingsPage() {
   const [originalSettings, setOriginalSettings] = useState<AISummarySettings>(DEFAULT_SETTINGS);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [inlineError, setInlineError] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const { toasts, closeToast, success, error } = useToast();
 
   useEffect(() => {
     fetchSettings();
@@ -83,7 +83,7 @@ export default function AISummarySettingsPage() {
       setSettings(data);
       setOriginalSettings(data);
     } catch (err) {
-      setInlineError(err instanceof Error ? err.message : 'Failed to load settings');
+      error('Failed to load settings', err instanceof Error ? err.message : 'Unknown error');
     } finally {
       setLoading(false);
     }
@@ -94,8 +94,6 @@ export default function AISummarySettingsPage() {
       ...prev,
       [key]: !prev[key],
     }));
-    setInlineError(null);
-    setSuccessMessage(null);
   };
 
   const hasUnsavedChanges = () => {
@@ -105,7 +103,6 @@ export default function AISummarySettingsPage() {
   const handleSave = async () => {
     try {
       setSaving(true);
-      setInlineError(null);
 
       const response = await fetch('/api/admin/ai-summary', {
         method: 'PUT',
@@ -118,10 +115,9 @@ export default function AISummarySettingsPage() {
       }
 
       setOriginalSettings(settings);
-      setSuccessMessage('Settings saved successfully');
-      setTimeout(() => setSuccessMessage(null), 3000);
+      success('Settings saved', 'AI summary settings updated successfully');
     } catch (err) {
-      setInlineError(err instanceof Error ? err.message : 'Failed to save settings');
+      error('Failed to save settings', err instanceof Error ? err.message : 'Unknown error');
     } finally {
       setSaving(false);
     }
@@ -129,8 +125,6 @@ export default function AISummarySettingsPage() {
 
   const handleReset = () => {
     setSettings(originalSettings);
-    setInlineError(null);
-    setSuccessMessage(null);
   };
 
   if (loading) {
@@ -277,21 +271,22 @@ export default function AISummarySettingsPage() {
       </section>
 
       {/* Actions */}
-      {inlineError && <div className="error-message">{inlineError}</div>}
-      {successMessage && <div className="success-message">{successMessage}</div>}
-
-      <div className="action-buttons">
+      <div className="action-buttons sticky">
         <button
           onClick={handleSave}
           disabled={!hasUnsavedChanges() || saving}
           className="btn-primary"
         >
+          {saving && <span className="spinner" />}
           {saving ? 'Saving...' : 'Save Settings'}
         </button>
         <button onClick={handleReset} disabled={!hasUnsavedChanges()} className="btn-secondary">
           Reset Changes
         </button>
       </div>
+
+      {/* Toast Notifications */}
+      <ToastContainer toasts={toasts} onClose={closeToast} />
     </div>
   );
 }

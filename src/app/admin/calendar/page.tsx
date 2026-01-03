@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useToast, ToastContainer } from '@/components/admin/Toast';
 
 // Color palette for rotating calendar colors
 const COLOR_PALETTE = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899'];
@@ -21,7 +22,6 @@ interface CalendarFeed {
 export default function CalendarSettingsPage() {
   const [feeds, setFeeds] = useState<CalendarFeed[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
   const [newFeedName, setNewFeedName] = useState('');
   const [newFeedUrl, setNewFeedUrl] = useState('');
@@ -35,7 +35,7 @@ export default function CalendarSettingsPage() {
   const [saving, setSaving] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [daysAhead, setDaysAhead] = useState(7);
-  const [inlineError, setInlineError] = useState<string | null>(null);
+  const { toasts, closeToast, success, error } = useToast();
 
   useEffect(() => {
     fetchFeeds();
@@ -49,13 +49,12 @@ export default function CalendarSettingsPage() {
   const fetchFeeds = async () => {
     try {
       setLoading(true);
-      setError(null);
       const response = await fetch('/api/admin/calendar');
       if (!response.ok) throw new Error('Failed to fetch calendar feeds');
       const data = await response.json();
       setFeeds(data.feeds || []);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load calendar feeds');
+      error('Failed to load feeds', err instanceof Error ? err.message : 'Unknown error');
       console.error('Error fetching feeds:', err);
     } finally {
       setLoading(false);
@@ -123,10 +122,10 @@ export default function CalendarSettingsPage() {
       setNewFeedColor(COLOR_PALETTE[0]);
       setTestResult(null);
       setShowAddModal(false);
+      success('Feed added', 'Calendar feed added successfully');
     } catch (err) {
       console.error('Error adding feed:', err);
-      setInlineError(err instanceof Error ? err.message : 'Failed to add calendar feed');
-      setTimeout(() => setInlineError(null), 5000); // Clear after 5 seconds
+      error('Failed to add feed', err instanceof Error ? err.message : 'Unknown error');
     } finally {
       setSaving(false);
     }
@@ -143,10 +142,10 @@ export default function CalendarSettingsPage() {
       if (!response.ok) throw new Error('Failed to remove calendar feed');
 
       setFeeds((prevFeeds) => prevFeeds.filter((f) => f.id !== id));
+      success('Feed removed', 'Calendar feed removed successfully');
     } catch (err) {
       console.error('Error removing feed:', err);
-      setInlineError(err instanceof Error ? err.message : 'Failed to remove calendar feed');
-      setTimeout(() => setInlineError(null), 5000); // Clear after 5 seconds
+      error('Failed to remove feed', err instanceof Error ? err.message : 'Unknown error');
     }
   };
 
@@ -169,10 +168,10 @@ export default function CalendarSettingsPage() {
       if (!response.ok) throw new Error('Failed to save changes');
 
       setHasUnsavedChanges(false);
+      success('Settings saved', 'Calendar settings updated successfully');
     } catch (err) {
       console.error('Error saving changes:', err);
-      setInlineError(err instanceof Error ? err.message : 'Failed to save changes');
-      setTimeout(() => setInlineError(null), 5000); // Clear after 5 seconds
+      error('Failed to save settings', err instanceof Error ? err.message : 'Unknown error');
     } finally {
       setSaving(false);
     }
@@ -196,17 +195,6 @@ export default function CalendarSettingsPage() {
         }}
       >
         <p style={{ color: 'var(--admin-text-secondary)' }}>Loading calendar feeds...</p>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="admin-card" style={{ padding: 'var(--space-xl)', textAlign: 'center' }}>
-        <p style={{ color: 'var(--admin-error)', marginBottom: 'var(--space-md)' }}>{error}</p>
-        <button className="admin-btn admin-btn-primary" onClick={fetchFeeds}>
-          Retry
-        </button>
       </div>
     );
   }
@@ -243,22 +231,6 @@ export default function CalendarSettingsPage() {
               {saving ? 'Saving...' : 'Save Changes'}
             </button>
           </div>
-        </div>
-      )}
-
-      {/* Inline Error Display */}
-      {inlineError && (
-        <div
-          className="admin-animate-in"
-          style={{
-            padding: 'var(--space-md)',
-            background: 'rgba(239, 68, 68, 0.1)',
-            border: '1px solid var(--admin-error)',
-            borderRadius: 'var(--radius-md)',
-            color: 'var(--admin-error)',
-          }}
-        >
-          {inlineError}
         </div>
       )}
 
@@ -667,6 +639,9 @@ export default function CalendarSettingsPage() {
           </div>
         </div>
       )}
+
+      {/* Toast Notifications */}
+      <ToastContainer toasts={toasts} onClose={closeToast} />
     </div>
   );
 }
