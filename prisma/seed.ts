@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3';
+import bcrypt from 'bcryptjs';
 import path from 'path';
 import 'dotenv/config';
 
@@ -13,6 +14,23 @@ const prisma = new PrismaClient({ adapter });
 
 async function main() {
   console.log('🌱 Seeding database...');
+
+  // Seed admin user for testing
+  const adminEmail = process.env.TEST_ADMIN_EMAIL || 'admin@example.com';
+  const adminPassword = process.env.TEST_ADMIN_PASSWORD || 'admin123';
+  const passwordHash = await bcrypt.hash(adminPassword, 10);
+
+  await prisma.user.upsert({
+    where: { email: adminEmail },
+    update: { passwordHash },
+    create: {
+      email: adminEmail,
+      passwordHash,
+      name: 'Test Admin',
+      role: 'admin',
+    },
+  });
+  console.log(`✅ Created admin user: ${adminEmail}`);
 
   // Seed widgets
   const widgets = [

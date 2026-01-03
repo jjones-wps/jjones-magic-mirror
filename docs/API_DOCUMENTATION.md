@@ -1,7 +1,7 @@
 # Magic Mirror API Documentation
 
-**Last Updated:** January 1, 2026
-**Version:** 1.0.0
+**Last Updated:** January 3, 2026
+**Version:** 0.2.0
 **Base URL:** `http://localhost:3000` (development) or `http://192.168.1.213:3000` (production Pi)
 
 ---
@@ -20,11 +20,36 @@
   - [GET /api/summary](#get-apisummary)
   - [GET /api/version](#get-apiversion)
   - [GET /api/weather](#get-apiweather)
-- [Admin API Routes](#admin-api-routes) (Incomplete)
-  - [GET/PUT /api/admin/settings](#getput-apiadminsettings)
-  - [GET /api/admin/mirror/status](#get-apiadminmirrorstatus)
-  - [POST /api/admin/mirror/refresh](#post-apiadminmirrorrefresh)
-  - [GET/PUT /api/admin/widgets](#getput-apiadminwidgets)
+- [Admin API Routes](#admin-api-routes)
+  - [System Management](#system-management)
+    - [GET /api/admin/settings](#get-apiadminsettings)
+    - [PUT /api/admin/settings](#put-apiadminsettings)
+    - [POST /api/admin/settings](#post-apiadminsettings)
+    - [GET /api/admin/widgets](#get-apiadminwidgets)
+    - [PUT /api/admin/widgets](#put-apiadminwidgets)
+    - [GET /api/admin/mirror/status](#get-apiadminmirrorstatus)
+    - [POST /api/admin/mirror/status](#post-apiadminmirrorstatus)
+    - [POST /api/admin/mirror/refresh](#post-apiadminmirrorrefresh)
+  - [Feature Configuration](#feature-configuration)
+    - [GET /api/admin/weather](#get-apiadminweather)
+    - [PUT /api/admin/weather](#put-apiadminweather)
+    - [GET /api/admin/ai-summary](#get-apiadminai-summary)
+    - [PUT /api/admin/ai-summary](#put-apiadminai-summary)
+    - [GET /api/admin/ai-behavior](#get-apiadminai-behavior)
+    - [PUT /api/admin/ai-behavior](#put-apiadminai-behavior)
+  - [Calendar Management](#calendar-management)
+    - [GET /api/admin/calendar](#get-apiadmincalendar)
+    - [POST /api/admin/calendar](#post-apiadmincalendar)
+    - [PUT /api/admin/calendar](#put-apiadmincalendar)
+    - [DELETE /api/admin/calendar/:id](#delete-apiadmincalendarid)
+    - [POST /api/admin/calendar/validate](#post-apiadmincalendarvalidate)
+  - [Commute Management](#commute-management)
+    - [GET /api/admin/commute](#get-apiadmincommute)
+    - [POST /api/admin/commute](#post-apiadmincommute)
+    - [PUT /api/admin/commute](#put-apiadmincommute)
+    - [DELETE /api/admin/commute/:id](#delete-apiadmincommuteid)
+  - [Utilities](#utilities)
+    - [GET /api/admin/geocode/search](#get-apiadmingeocodesearch)
 - [OAuth Routes](#oauth-routes)
   - [GET /api/spotify/authorize](#get-apispotifyauthorize)
   - [GET /api/spotify/callback](#get-apispotifycallback)
@@ -920,45 +945,1412 @@ function getWeatherDescription(code: number): string {
 
 ## Admin API Routes
 
-**⚠️ Note:** Admin portal is currently **incomplete** with 0% test coverage. These routes are excluded from production builds using `@ts-nocheck` directives. Documentation below is for reference only.
+All admin routes require **JWT authentication** via NextAuth v5 session. Unauthorized requests return `401 Unauthorized`.
 
-### GET/PUT /api/admin/settings
+### System Management
 
-**Status:** 🚧 Incomplete
-**Authentication:** JWT required
-**Purpose:** Manage system-wide mirror settings
+#### GET /api/admin/settings
 
-**Implementation:** Not fully implemented
+**Purpose:** Retrieve all settings or filter by category. Encrypted settings are masked with asterisks.
+
+**Authentication:** JWT session required
+
+**Query Parameters:**
+
+| Parameter | Type   | Required | Description                                |
+| --------- | ------ | -------- | ------------------------------------------ |
+| category  | string | No       | Filter settings by category (e.g., "weather", "ai-summary") |
+
+**Response:**
+
+```typescript
+{
+  "settings": [
+    {
+      "id": "weather.latitude",
+      "category": "weather",
+      "value": "41.0793", // JSON parsed, encrypted values shown as "********"
+      "label": "Latitude",
+      "encrypted": false,
+      "updatedBy": "user-id",
+      "createdAt": "2025-01-01T00:00:00.000Z",
+      "updatedAt": "2025-01-01T00:00:00.000Z"
+    }
+  ]
+}
+```
+
+**Error Responses:**
+
+- **401:** Unauthorized (no valid session)
+- **500:** Failed to fetch settings
+
+**TypeScript Example:**
+
+```typescript
+// Fetch all settings
+const response = await fetch('/api/admin/settings');
+const { settings } = await response.json();
+
+// Fetch weather settings only
+const weatherResponse = await fetch('/api/admin/settings?category=weather');
+const { settings: weatherSettings } = await weatherResponse.json();
+```
 
 ---
 
-### GET /api/admin/mirror/status
+#### PUT /api/admin/settings
 
-**Status:** 🚧 Incomplete
-**Authentication:** JWT required
-**Purpose:** Health check and system status
+**Purpose:** Update multiple settings in a single request. Increments config version to trigger mirror refresh.
 
-**Implementation:** Not fully implemented
+**Authentication:** JWT session required
+
+**Request Body:**
+
+```typescript
+{
+  "settings": [
+    {
+      "id": "weather.latitude",
+      "value": "41.0793"
+    },
+    {
+      "id": "weather.longitude",
+      "value": "-85.1394"
+    }
+  ]
+}
+```
+
+**Response:**
+
+```typescript
+{
+  "success": true,
+  "updated": 2 // Number of settings updated
+}
+```
+
+**Error Responses:**
+
+- **400:** Invalid settings format (must be an array)
+- **401:** Unauthorized (no valid session)
+- **500:** Failed to update settings
+
+**Side Effects:**
+
+- Increments `configVersion` to trigger mirror auto-refresh
+- Creates activity log entry with action `settings.update`
+
+**TypeScript Example:**
+
+```typescript
+const response = await fetch('/api/admin/settings', {
+  method: 'PUT',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    settings: [
+      { id: 'weather.latitude', value: '41.0793' },
+      { id: 'weather.longitude', value: '-85.1394' },
+    ],
+  }),
+});
+
+const { success, updated } = await response.json();
+```
 
 ---
 
-### POST /api/admin/mirror/refresh
+#### POST /api/admin/settings
 
-**Status:** 🚧 Incomplete
-**Authentication:** JWT required
-**Purpose:** Force mirror display refresh
+**Purpose:** Create a new setting. Used for adding custom configuration values.
 
-**Implementation:** Not fully implemented
+**Authentication:** JWT session required
+
+**Request Body:**
+
+```typescript
+{
+  "id": "custom.setting",
+  "value": "some-value",
+  "category": "custom",
+  "label": "Custom Setting", // Optional
+  "encrypted": false // Optional, defaults to false
+}
+```
+
+**Response:**
+
+```typescript
+{
+  "success": true,
+  "setting": {
+    "id": "custom.setting",
+    "value": "\"some-value\"", // Stored as JSON string
+    "category": "custom",
+    "label": "Custom Setting",
+    "encrypted": false,
+    "updatedBy": "user-id",
+    "createdAt": "2025-01-03T00:00:00.000Z",
+    "updatedAt": "2025-01-03T00:00:00.000Z"
+  }
+}
+```
+
+**Error Responses:**
+
+- **400:** Missing required fields (id, value, category)
+- **401:** Unauthorized (no valid session)
+- **500:** Failed to create setting (e.g., ID already exists)
+
+**Side Effects:**
+
+- Creates activity log entry with action `settings.create`
+
+**TypeScript Example:**
+
+```typescript
+const response = await fetch('/api/admin/settings', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    id: 'custom.apiKey',
+    value: 'sk_test_123',
+    category: 'integrations',
+    label: 'External API Key',
+    encrypted: true,
+  }),
+});
+
+const { success, setting } = await response.json();
+```
 
 ---
 
-### GET/PUT /api/admin/widgets
+#### GET /api/admin/widgets
 
-**Status:** 🚧 Incomplete
-**Authentication:** JWT required
-**Purpose:** Configure widget visibility and settings
+**Purpose:** Retrieve all widget configurations including visibility, order, and custom settings.
 
-**Implementation:** Not fully implemented
+**Authentication:** JWT session required
+
+**Query Parameters:** None
+
+**Response:**
+
+```typescript
+{
+  "widgets": [
+    {
+      "id": "weather",
+      "enabled": true,
+      "order": 1,
+      "settings": { // Parsed from JSON
+        "refreshInterval": 900000,
+        "showForecast": true
+      },
+      "createdAt": "2025-01-01T00:00:00.000Z",
+      "updatedAt": "2025-01-01T00:00:00.000Z"
+    }
+  ]
+}
+```
+
+**Error Responses:**
+
+- **401:** Unauthorized (no valid session)
+- **500:** Failed to fetch widgets
+
+**TypeScript Example:**
+
+```typescript
+const response = await fetch('/api/admin/widgets');
+const { widgets } = await response.json();
+
+// Find a specific widget
+const weatherWidget = widgets.find((w) => w.id === 'weather');
+```
+
+---
+
+#### PUT /api/admin/widgets
+
+**Purpose:** Update widget configurations (visibility, display order, custom settings).
+
+**Authentication:** JWT session required
+
+**Request Body:**
+
+```typescript
+{
+  "widgets": [
+    {
+      "id": "weather",
+      "enabled": true,
+      "order": 1,
+      "settings": {
+        "refreshInterval": 900000,
+        "showForecast": true
+      }
+    },
+    {
+      "id": "calendar",
+      "enabled": false
+    }
+  ]
+}
+```
+
+**Response:**
+
+```typescript
+{
+  "success": true,
+  "updated": 2
+}
+```
+
+**Error Responses:**
+
+- **400:** Invalid widgets format (must be an array)
+- **401:** Unauthorized (no valid session)
+- **500:** Failed to update widgets
+
+**Side Effects:**
+
+- Increments `configVersion` to trigger mirror auto-refresh
+- Creates activity log entry with action `widgets.update`
+
+**TypeScript Example:**
+
+```typescript
+// Disable weather widget
+const response = await fetch('/api/admin/widgets', {
+  method: 'PUT',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    widgets: [{ id: 'weather', enabled: false }],
+  }),
+});
+
+const { success } = await response.json();
+```
+
+---
+
+#### GET /api/admin/mirror/status
+
+**Purpose:** Retrieve mirror system health metrics, config version, widget stats, and recent activity.
+
+**Authentication:** JWT session required
+
+**Query Parameters:** None
+
+**Response:**
+
+```typescript
+{
+  "status": {
+    "online": true,
+    "lastPing": "2025-01-03T12:00:00.000Z",
+    "uptime": 3600, // seconds
+    "memoryUsage": 128, // MB (heap used)
+    "cpuUsage": 0.25 // 1-minute load average
+  },
+  "config": {
+    "version": 42,
+    "lastUpdated": "2025-01-03T11:30:00.000Z"
+  },
+  "widgets": {
+    "enabled": 7,
+    "total": 10
+  },
+  "recentActivity": [
+    {
+      "id": "activity-123",
+      "action": "weather.update",
+      "category": "weather",
+      "details": { "location": "Fort Wayne, IN" },
+      "createdAt": "2025-01-03T11:30:00.000Z",
+      "user": "admin@example.com"
+    }
+  ]
+}
+```
+
+**Error Responses:**
+
+- **401:** Unauthorized (no valid session)
+- **500:** Failed to get mirror status
+
+**TypeScript Example:**
+
+```typescript
+const response = await fetch('/api/admin/mirror/status');
+const { status, config, widgets, recentActivity } = await response.json();
+
+// Check if mirror is online
+if (!status.online) {
+  console.warn('Mirror is offline!');
+}
+```
+
+---
+
+#### POST /api/admin/mirror/status
+
+**Purpose:** Update mirror heartbeat (called by mirror display itself). No authentication required for heartbeat updates.
+
+**Authentication:** None required (public endpoint for mirror)
+
+**Request Body:** None
+
+**Response:**
+
+```typescript
+{
+  "success": true
+}
+```
+
+**Error Responses:**
+
+- **500:** Failed to update heartbeat
+
+**Side Effects:**
+
+- Updates `SystemState` record with current metrics (uptime, memory, CPU)
+- Sets `online: true` and updates `lastPing` timestamp
+
+**TypeScript Example:**
+
+```typescript
+// Called automatically by mirror display every 60 seconds
+const response = await fetch('/api/admin/mirror/status', {
+  method: 'POST',
+});
+```
+
+---
+
+#### POST /api/admin/mirror/refresh
+
+**Purpose:** Force mirror display to refresh by incrementing config version.
+
+**Authentication:** JWT session required
+
+**Request Body:** None
+
+**Response:**
+
+```typescript
+{
+  "success": true,
+  "message": "Refresh signal sent to mirror",
+  "configVersion": 43
+}
+```
+
+**Error Responses:**
+
+- **401:** Unauthorized (no valid session)
+- **500:** Failed to trigger refresh
+
+**Side Effects:**
+
+- Increments `configVersion` (mirror polls this and refreshes when changed)
+- Creates activity log entry with action `mirror.refresh`
+
+**TypeScript Example:**
+
+```typescript
+// Trigger mirror refresh from admin panel
+const response = await fetch('/api/admin/mirror/refresh', {
+  method: 'POST',
+});
+
+const { configVersion } = await response.json();
+console.log(`Refresh signal sent, config version now: ${configVersion}`);
+```
+
+---
+
+### Feature Configuration
+
+#### GET /api/admin/weather
+
+**Purpose:** Retrieve weather configuration (location coordinates and units).
+
+**Authentication:** JWT session required
+
+**Query Parameters:** None
+
+**Response:**
+
+```typescript
+{
+  "latitude": "41.0793",
+  "longitude": "-85.1394",
+  "location": "Fort Wayne, IN",
+  "units": "fahrenheit" // or "celsius"
+}
+```
+
+**Error Responses:**
+
+- **401:** Unauthorized (no valid session)
+- **500:** Failed to fetch weather settings
+
+**TypeScript Example:**
+
+```typescript
+const response = await fetch('/api/admin/weather');
+const { latitude, longitude, location, units } = await response.json();
+```
+
+---
+
+#### PUT /api/admin/weather
+
+**Purpose:** Update weather configuration with validation.
+
+**Authentication:** JWT session required
+
+**Request Body:**
+
+```typescript
+{
+  "latitude": "41.0793", // -90 to 90
+  "longitude": "-85.1394", // -180 to 180
+  "location": "Fort Wayne, IN",
+  "units": "fahrenheit" // "fahrenheit" or "celsius"
+}
+```
+
+**Response:**
+
+```typescript
+{
+  "success": true
+}
+```
+
+**Error Responses:**
+
+- **400:** All fields are required
+- **400:** Latitude must be a number between -90 and 90
+- **400:** Longitude must be a number between -180 and 180
+- **400:** Units must be either "fahrenheit" or "celsius"
+- **401:** Unauthorized (no valid session)
+- **500:** Failed to update weather settings
+
+**Side Effects:**
+
+- Updates four database settings: `weather.latitude`, `weather.longitude`, `weather.location`, `weather.units`
+- Increments `configVersion` to trigger mirror auto-refresh
+- Creates activity log entry with action `weather.update`
+
+**TypeScript Example:**
+
+```typescript
+const response = await fetch('/api/admin/weather', {
+  method: 'PUT',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    latitude: '41.0793',
+    longitude: '-85.1394',
+    location: 'Fort Wayne, IN',
+    units: 'fahrenheit',
+  }),
+});
+
+const { success } = await response.json();
+```
+
+---
+
+#### GET /api/admin/ai-summary
+
+**Purpose:** Retrieve AI summary context settings (which data to include in AI prompts).
+
+**Authentication:** JWT session required
+
+**Query Parameters:** None
+
+**Response:**
+
+```typescript
+{
+  // Weather Context
+  "includeWeatherLocation": true,
+  "includeFeelsLike": true,
+  "includeWindSpeed": true,
+  "includePrecipitation": true,
+  "includeTomorrowWeather": true,
+
+  // Calendar Context
+  "includeCalendar": true,
+  "includeEventTimes": true,
+  "includeTimeUntilNext": true,
+  "includeAllDayEvents": true,
+
+  // Commute Context
+  "includeCommute": true,
+  "includeCommuteDeviation": true,
+
+  // Temporal Context
+  "includeDayDate": true,
+  "includeWeekendDetection": true
+}
+```
+
+**Error Responses:**
+
+- **401:** Unauthorized (no valid session)
+- **500:** Failed to fetch AI summary settings
+
+**Note:** These settings are persisted to the database but NOT yet consumed by `/api/summary` route. This is a feature stub for future implementation.
+
+**TypeScript Example:**
+
+```typescript
+const response = await fetch('/api/admin/ai-summary');
+const settings = await response.json();
+
+if (settings.includeWeather) {
+  console.log('Weather context enabled in AI summaries');
+}
+```
+
+---
+
+#### PUT /api/admin/ai-summary
+
+**Purpose:** Update which context data is included in AI summary prompts.
+
+**Authentication:** JWT session required
+
+**Request Body:**
+
+All fields are required and must be boolean values.
+
+```typescript
+{
+  "includeWeatherLocation": true,
+  "includeFeelsLike": true,
+  "includeWindSpeed": true,
+  "includePrecipitation": true,
+  "includeTomorrowWeather": true,
+  "includeCalendar": true,
+  "includeEventTimes": true,
+  "includeTimeUntilNext": true,
+  "includeAllDayEvents": true,
+  "includeCommute": true,
+  "includeCommuteDeviation": true,
+  "includeDayDate": true,
+  "includeWeekendDetection": true
+}
+```
+
+**Response:**
+
+```typescript
+{
+  "success": true
+}
+```
+
+**Error Responses:**
+
+- **400:** Missing or invalid field (all fields must be boolean)
+- **401:** Unauthorized (no valid session)
+- **500:** Failed to update AI summary settings
+
+**Side Effects:**
+
+- Updates 13 database settings with prefix `ai-summary.*`
+- Increments `configVersion` to trigger mirror auto-refresh
+- Creates activity log entry with action `ai-summary.update`
+
+**TypeScript Example:**
+
+```typescript
+// Disable commute and weekend detection in AI summaries
+const response = await fetch('/api/admin/ai-summary', {
+  method: 'PUT',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    includeWeatherLocation: true,
+    includeFeelsLike: true,
+    includeWindSpeed: true,
+    includePrecipitation: true,
+    includeTomorrowWeather: true,
+    includeCalendar: true,
+    includeEventTimes: true,
+    includeTimeUntilNext: true,
+    includeAllDayEvents: true,
+    includeCommute: false, // Disabled
+    includeCommuteDeviation: false,
+    includeDayDate: true,
+    includeWeekendDetection: false, // Disabled
+  }),
+});
+
+const { success } = await response.json();
+```
+
+---
+
+#### GET /api/admin/ai-behavior
+
+**Purpose:** Retrieve AI model parameters and personality settings for daily summary generation.
+
+**Authentication:** JWT session required
+
+**Query Parameters:** None
+
+**Response:**
+
+```typescript
+{
+  // Model & Output Parameters
+  "model": "anthropic/claude-3-haiku",
+  "temperature": 0.7, // 0-2 (creativity)
+  "maxTokens": 150, // 50-300 (summary length)
+  "topP": 1, // 0-1 (nucleus sampling)
+  "presencePenalty": 0, // -2 to 2 (topic diversity)
+  "verbosity": "medium", // "low" | "medium" | "high"
+
+  // Tone & Personalization
+  "tone": "casual", // "formal" | "casual"
+  "userNames": ["Jack", "Lauren"], // Array of names for personalization
+  "humorLevel": "subtle", // "none" | "subtle" | "playful"
+  "customInstructions": "", // Max 500 chars
+
+  // Context-Aware Intelligence
+  "morningTone": "energizing", // "energizing" | "neutral" | "custom"
+  "eveningTone": "calming", // "calming" | "neutral" | "custom"
+  "stressAwareEnabled": true, // Detect busy schedules
+  "celebrationModeEnabled": true, // Celebrate birthdays, holidays
+
+  // Advanced Controls
+  "stopSequences": [] // Max 10 sequences
+}
+```
+
+**Error Responses:**
+
+- **401:** Unauthorized (no valid session)
+- **500:** Failed to fetch AI behavior settings
+
+**TypeScript Example:**
+
+```typescript
+const response = await fetch('/api/admin/ai-behavior');
+const settings = await response.json();
+
+console.log(`Current AI model: ${settings.model}`);
+console.log(`Temperature: ${settings.temperature}`);
+```
+
+---
+
+#### PUT /api/admin/ai-behavior
+
+**Purpose:** Update AI behavior settings with comprehensive validation.
+
+**Authentication:** JWT session required
+
+**Request Body:**
+
+```typescript
+{
+  "model": "anthropic/claude-3-haiku",
+  "temperature": 0.7, // Must be 0-2
+  "maxTokens": 150, // Must be 50-300
+  "topP": 1, // Must be 0-1
+  "presencePenalty": 0, // Must be -2 to 2
+  "verbosity": "medium", // Must be "low" | "medium" | "high"
+  "tone": "casual", // Must be "formal" | "casual"
+  "userNames": ["Jack", "Lauren"], // Max 10 names
+  "humorLevel": "subtle", // Must be "none" | "subtle" | "playful"
+  "customInstructions": "Be encouraging on Mondays", // Max 500 chars
+  "morningTone": "energizing",
+  "eveningTone": "calming",
+  "stressAwareEnabled": true,
+  "celebrationModeEnabled": true,
+  "stopSequences": ["END", "STOP"] // Max 10 sequences
+}
+```
+
+**Response:**
+
+```typescript
+{
+  "success": true
+}
+```
+
+**Validation Rules:**
+
+- **temperature:** 0-2
+- **maxTokens:** 50-300
+- **topP:** 0-1
+- **presencePenalty:** -2 to 2
+- **verbosity:** "low" | "medium" | "high"
+- **tone:** "formal" | "casual"
+- **humorLevel:** "none" | "subtle" | "playful"
+- **customInstructions:** Max 500 characters
+- **stopSequences:** Max 10 sequences
+- **userNames:** Max 10 names
+
+**Error Responses:**
+
+- **400:** Validation error with detailed message (e.g., "Temperature must be between 0 and 2")
+- **401:** Unauthorized (no valid session)
+- **500:** Failed to update AI behavior settings
+
+**Side Effects:**
+
+- Updates 15 database settings with prefix `ai-behavior.*`
+- Increments `configVersion` to trigger mirror auto-refresh
+- Creates activity log entry with action `ai-behavior.update`
+- Invalidates server-side AI behavior cache
+
+**TypeScript Example:**
+
+```typescript
+// Make AI more creative and playful in the morning
+const response = await fetch('/api/admin/ai-behavior', {
+  method: 'PUT',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    model: 'anthropic/claude-3-haiku',
+    temperature: 1.2, // More creative
+    maxTokens: 200, // Longer summaries
+    topP: 1,
+    presencePenalty: 0,
+    verbosity: 'high',
+    tone: 'casual',
+    userNames: ['Jack', 'Lauren'],
+    humorLevel: 'playful', // More humor
+    customInstructions: 'Always include a motivational quote',
+    morningTone: 'energizing',
+    eveningTone: 'calming',
+    stressAwareEnabled: true,
+    celebrationModeEnabled: true,
+    stopSequences: [],
+  }),
+});
+
+if (!response.ok) {
+  const error = await response.json();
+  console.error(error.error); // "Temperature must be between 0 and 2"
+}
+```
+
+---
+
+### Calendar Management
+
+#### GET /api/admin/calendar
+
+**Purpose:** Retrieve all configured calendar feeds.
+
+**Authentication:** JWT session required
+
+**Query Parameters:** None
+
+**Response:**
+
+```typescript
+{
+  "feeds": [
+    {
+      "id": "feed-123",
+      "name": "Personal Calendar",
+      "url": "https://calendar.icloud.com/holidays/US_en.ics",
+      "enabled": true,
+      "color": "#FF5733", // Optional hex color
+      "createdAt": "2025-01-01T00:00:00.000Z",
+      "updatedAt": "2025-01-01T00:00:00.000Z"
+    }
+  ]
+}
+```
+
+**Error Responses:**
+
+- **401:** Unauthorized (no valid session)
+- **500:** Failed to fetch calendar feeds
+
+**TypeScript Example:**
+
+```typescript
+const response = await fetch('/api/admin/calendar');
+const { feeds } = await response.json();
+
+// Find enabled feeds
+const enabledFeeds = feeds.filter((f) => f.enabled);
+```
+
+---
+
+#### POST /api/admin/calendar
+
+**Purpose:** Create a new calendar feed.
+
+**Authentication:** JWT session required
+
+**Request Body:**
+
+```typescript
+{
+  "name": "Work Calendar",
+  "url": "https://calendar.google.com/calendar/ical/.../.ics",
+  "enabled": true, // Optional, defaults to true
+  "color": "#4285F4" // Optional hex color
+}
+```
+
+**Response:**
+
+```typescript
+{
+  "feed": {
+    "id": "feed-456",
+    "name": "Work Calendar",
+    "url": "https://calendar.google.com/calendar/ical/.../.ics",
+    "enabled": true,
+    "color": "#4285F4",
+    "createdAt": "2025-01-03T12:00:00.000Z",
+    "updatedAt": "2025-01-03T12:00:00.000Z"
+  }
+}
+```
+
+**Error Responses:**
+
+- **400:** Name and URL are required
+- **401:** Unauthorized (no valid session)
+- **500:** Failed to create calendar feed
+
+**Side Effects:**
+
+- Increments `configVersion` to trigger mirror auto-refresh
+- Creates activity log entry with action `calendar.create`
+
+**TypeScript Example:**
+
+```typescript
+const response = await fetch('/api/admin/calendar', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    name: 'Work Calendar',
+    url: 'https://calendar.google.com/calendar/ical/.../basic.ics',
+    enabled: true,
+    color: '#4285F4',
+  }),
+});
+
+const { feed } = await response.json();
+console.log(`Created feed with ID: ${feed.id}`);
+```
+
+---
+
+#### PUT /api/admin/calendar
+
+**Purpose:** Bulk update calendar feeds (for enable/disable operations).
+
+**Authentication:** JWT session required
+
+**Request Body:**
+
+```typescript
+{
+  "feeds": [
+    { "id": "feed-123", "enabled": true },
+    { "id": "feed-456", "enabled": false }
+  ]
+}
+```
+
+**Response:**
+
+```typescript
+{
+  "success": true
+}
+```
+
+**Error Responses:**
+
+- **400:** Feeds array is required
+- **401:** Unauthorized (no valid session)
+- **500:** Failed to update calendar feeds
+
+**Side Effects:**
+
+- Increments `configVersion` to trigger mirror auto-refresh
+- Creates activity log entry with action `calendar.update`
+
+**TypeScript Example:**
+
+```typescript
+// Disable multiple calendar feeds
+const response = await fetch('/api/admin/calendar', {
+  method: 'PUT',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    feeds: [
+      { id: 'feed-123', enabled: false },
+      { id: 'feed-456', enabled: false },
+    ],
+  }),
+});
+
+const { success } = await response.json();
+```
+
+---
+
+#### DELETE /api/admin/calendar/:id
+
+**Purpose:** Delete a calendar feed by ID.
+
+**Authentication:** JWT session required
+
+**Path Parameters:**
+
+| Parameter | Type   | Description          |
+| --------- | ------ | -------------------- |
+| id        | string | Calendar feed ID     |
+
+**Request Body:** None
+
+**Response:**
+
+```typescript
+{
+  "success": true
+}
+```
+
+**Error Responses:**
+
+- **401:** Unauthorized (no valid session)
+- **404:** Feed not found
+- **500:** Failed to delete calendar feed
+
+**Side Effects:**
+
+- Increments `configVersion` to trigger mirror auto-refresh
+- Creates activity log entry with action `calendar.delete`
+
+**TypeScript Example:**
+
+```typescript
+const feedId = 'feed-123';
+const response = await fetch(`/api/admin/calendar/${feedId}`, {
+  method: 'DELETE',
+});
+
+if (response.ok) {
+  console.log('Feed deleted successfully');
+}
+```
+
+---
+
+#### POST /api/admin/calendar/validate
+
+**Purpose:** Validate an iCal URL before saving to database. Fetches and parses the feed to ensure it's accessible and valid.
+
+**Authentication:** JWT session required
+
+**Request Body:**
+
+```typescript
+{
+  "url": "https://calendar.icloud.com/holidays/US_en.ics"
+}
+```
+
+**Response (Valid Feed):**
+
+```typescript
+{
+  "valid": true,
+  "eventCount": 42,
+  "message": "Successfully parsed 42 events"
+}
+```
+
+**Response (Invalid Feed):**
+
+```typescript
+{
+  "valid": false,
+  "error": "Could not reach the calendar URL. Check the URL and your network connection."
+}
+```
+
+**Error Responses:**
+
+- **400:** URL is required
+- **400:** Invalid URL format
+- **400:** Validation failed with user-friendly error message
+- **401:** Unauthorized (no valid session)
+- **500:** Failed to validate calendar URL
+
+**User-Friendly Error Mapping:**
+
+- **Network errors:** "Could not reach the calendar URL. Check the URL and your network connection."
+- **Parse errors:** "The URL does not contain a valid iCal feed."
+- **404:** "Calendar feed not found (404). Check the URL."
+- **401/403:** "Access denied. The calendar URL may be private or require authentication."
+
+**TypeScript Example:**
+
+```typescript
+// Validate before creating a feed
+const validateResponse = await fetch('/api/admin/calendar/validate', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    url: 'https://calendar.google.com/calendar/ical/.../basic.ics',
+  }),
+});
+
+const { valid, eventCount, error } = await validateResponse.json();
+
+if (valid) {
+  console.log(`Valid feed with ${eventCount} events`);
+  // Proceed to create feed
+} else {
+  console.error(`Invalid feed: ${error}`);
+}
+```
+
+---
+
+### Commute Management
+
+#### GET /api/admin/commute
+
+**Purpose:** Retrieve all configured commute routes.
+
+**Authentication:** JWT session required
+
+**Query Parameters:** None
+
+**Response:**
+
+```typescript
+{
+  "routes": [
+    {
+      "id": "route-123",
+      "name": "Jack to Work",
+      "originLat": 41.0454,
+      "originLon": -85.1455,
+      "destLat": 41.1327,
+      "destLon": -85.1762,
+      "arrivalTime": "08:00",
+      "daysActive": "1,2,3,4,5", // 0=Sun, 1=Mon, ..., 6=Sat
+      "enabled": true,
+      "createdAt": "2025-01-01T00:00:00.000Z",
+      "updatedAt": "2025-01-01T00:00:00.000Z"
+    }
+  ]
+}
+```
+
+**Error Responses:**
+
+- **401:** Unauthorized (no valid session)
+- **500:** Failed to fetch commute routes
+
+**TypeScript Example:**
+
+```typescript
+const response = await fetch('/api/admin/commute');
+const { routes } = await response.json();
+
+// Find routes active on Monday
+const mondayRoutes = routes.filter((r) => r.daysActive.includes('1'));
+```
+
+---
+
+#### POST /api/admin/commute
+
+**Purpose:** Create a new commute route with validation.
+
+**Authentication:** JWT session required
+
+**Request Body:**
+
+```typescript
+{
+  "name": "Lauren to School",
+  "originLat": "41.0454", // -90 to 90
+  "originLon": "-85.1455", // -180 to 180
+  "destLat": "41.0421",
+  "destLon": "-85.2409",
+  "arrivalTime": "08:00", // HH:MM format (24-hour)
+  "daysActive": "1,2,3,4,5", // Optional, defaults to weekdays
+  "enabled": true // Optional, defaults to true
+}
+```
+
+**Response:**
+
+```typescript
+{
+  "route": {
+    "id": "route-456",
+    "name": "Lauren to School",
+    "originLat": 41.0454,
+    "originLon": -85.1455,
+    "destLat": 41.0421,
+    "destLon": -85.2409,
+    "arrivalTime": "08:00",
+    "daysActive": "1,2,3,4,5",
+    "enabled": true,
+    "createdAt": "2025-01-03T12:00:00.000Z",
+    "updatedAt": "2025-01-03T12:00:00.000Z"
+  }
+}
+```
+
+**Validation Rules:**
+
+- **originLat / destLat:** -90 to 90
+- **originLon / destLon:** -180 to 180
+- **arrivalTime:** HH:MM format (e.g., "08:00", "17:30")
+- **daysActive:** Comma-separated numbers 0-6 (0=Sunday, 6=Saturday)
+
+**Error Responses:**
+
+- **400:** Name, origin coordinates, destination coordinates, and arrival time are required
+- **400:** Origin/Destination latitude must be between -90 and 90
+- **400:** Origin/Destination longitude must be between -180 and 180
+- **400:** Arrival time must be in HH:MM format
+- **400:** Days active must be comma-separated numbers 0-6
+- **401:** Unauthorized (no valid session)
+- **500:** Failed to create commute route
+
+**Side Effects:**
+
+- Increments `configVersion` to trigger mirror auto-refresh
+- Creates activity log entry with action `commute.create`
+
+**TypeScript Example:**
+
+```typescript
+const response = await fetch('/api/admin/commute', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    name: 'Lauren to School',
+    originLat: '41.0454',
+    originLon: '-85.1455',
+    destLat: '41.0421',
+    destLon: '-85.2409',
+    arrivalTime: '08:00',
+    daysActive: '1,2,3,4,5', // Mon-Fri
+    enabled: true,
+  }),
+});
+
+const { route } = await response.json();
+console.log(`Created route with ID: ${route.id}`);
+```
+
+---
+
+#### PUT /api/admin/commute
+
+**Purpose:** Bulk update commute routes (for enable/disable operations).
+
+**Authentication:** JWT session required
+
+**Request Body:**
+
+```typescript
+{
+  "routes": [
+    { "id": "route-123", "enabled": true },
+    { "id": "route-456", "enabled": false }
+  ]
+}
+```
+
+**Response:**
+
+```typescript
+{
+  "success": true
+}
+```
+
+**Error Responses:**
+
+- **400:** Routes array is required
+- **401:** Unauthorized (no valid session)
+- **500:** Failed to update commute routes
+
+**Side Effects:**
+
+- Increments `configVersion` to trigger mirror auto-refresh
+- Creates activity log entry with action `commute.update`
+
+**TypeScript Example:**
+
+```typescript
+// Disable weekend routes
+const response = await fetch('/api/admin/commute', {
+  method: 'PUT',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    routes: [
+      { id: 'route-123', enabled: false },
+      { id: 'route-456', enabled: false },
+    ],
+  }),
+});
+
+const { success } = await response.json();
+```
+
+---
+
+#### DELETE /api/admin/commute/:id
+
+**Purpose:** Delete a commute route by ID.
+
+**Authentication:** JWT session required
+
+**Path Parameters:**
+
+| Parameter | Type   | Description       |
+| --------- | ------ | ----------------- |
+| id        | string | Commute route ID  |
+
+**Request Body:** None
+
+**Response:**
+
+```typescript
+{
+  "success": true
+}
+```
+
+**Error Responses:**
+
+- **401:** Unauthorized (no valid session)
+- **404:** Route not found
+- **500:** Failed to delete commute route
+
+**Side Effects:**
+
+- Increments `configVersion` to trigger mirror auto-refresh
+- Creates activity log entry with action `commute.delete`
+
+**TypeScript Example:**
+
+```typescript
+const routeId = 'route-123';
+const response = await fetch(`/api/admin/commute/${routeId}`, {
+  method: 'DELETE',
+});
+
+if (response.ok) {
+  console.log('Route deleted successfully');
+}
+```
+
+---
+
+### Utilities
+
+#### GET /api/admin/geocode/search
+
+**Purpose:** Search for locations using TomTom Search API with typeahead support. Used for address autocomplete in admin forms.
+
+**Authentication:** JWT session required
+
+**Query Parameters:**
+
+| Parameter | Type   | Required | Description                             |
+| --------- | ------ | -------- | --------------------------------------- |
+| q         | string | Yes      | Search query (2-100 characters)         |
+
+**Response:**
+
+```typescript
+{
+  "results": [
+    {
+      "address": "1600 Pennsylvania Avenue NW, Washington, DC 20500",
+      "lat": 38.8977,
+      "lon": -77.0365
+    },
+    {
+      "address": "1600 Pennsylvania St, Fort Wayne, IN 46802",
+      "lat": 41.0732,
+      "lon": -85.1394
+    }
+  ]
+}
+```
+
+**Error Responses:**
+
+- **400:** Query parameter "q" is required
+- **400:** Query must be at least 2 characters
+- **400:** Query must not exceed 100 characters
+- **401:** Unauthorized (no valid session)
+
+**Graceful Degradation:**
+
+- If `TOMTOM_API_KEY` is missing, returns empty results with warning log
+- If TomTom API fails, returns empty results (no error)
+
+**Caching:**
+
+- 24-hour cache (addresses rarely change)
+- Reduces API usage on TomTom free tier (2,500 requests/day)
+
+**TypeScript Example:**
+
+```typescript
+// Typeahead search as user types
+const searchLocation = async (query: string) => {
+  if (query.length < 2) return;
+
+  const response = await fetch(
+    `/api/admin/geocode/search?q=${encodeURIComponent(query)}`
+  );
+  const { results } = await response.json();
+
+  return results.map((r) => ({
+    label: r.address,
+    coordinates: { lat: r.lat, lon: r.lon },
+  }));
+};
+
+// Usage in autocomplete component
+const suggestions = await searchLocation('1600 Penn');
+// Returns:
+// [
+//   { label: "1600 Pennsylvania Avenue NW, Washington, DC 20500", coordinates: {...} },
+//   { label: "1600 Pennsylvania St, Fort Wayne, IN 46802", coordinates: {...} }
+// ]
+```
 
 ---
 

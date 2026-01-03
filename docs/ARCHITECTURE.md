@@ -1,602 +1,756 @@
 # Magic Mirror Architecture
 
-**Last Updated:** January 1, 2026
-**Version:** 1.0.0
-**Project:** Smart Magic Mirror Display for Raspberry Pi
+**Last Updated:** January 3, 2026
+**Version:** 0.2.0
+**Project Type:** Next.js 16 + TypeScript + Prisma + SQLite
 
 ---
 
 ## Table of Contents
 
-- [System Overview](#system-overview)
-- [Architecture Diagrams](#architecture-diagrams)
-  - [System Component Diagram](#system-component-diagram)
-  - [Data Flow Diagram](#data-flow-diagram)
-  - [Deployment Architecture](#deployment-architecture)
-  - [Authentication Flow](#authentication-flow)
-  - [Widget Lifecycle](#widget-lifecycle)
-  - [Caching Strategy](#caching-strategy)
-- [Technology Stack](#technology-stack)
-- [Key Architectural Decisions](#key-architectural-decisions)
-- [Performance Considerations](#performance-considerations)
-- [Scalability & Future Growth](#scalability--future-growth)
+1. [System Overview](#system-overview)
+2. [Component Architecture Diagram](#component-architecture-diagram)
+3. [Data Flow Diagram](#data-flow-diagram)
+4. [Deployment Architecture](#deployment-architecture)
+5. [Authentication Flow](#authentication-flow)
+6. [Architectural Decisions](#architectural-decisions)
+7. [Technology Stack](#technology-stack)
+8. [Performance Considerations](#performance-considerations)
+9. [Security Architecture](#security-architecture)
+10. [Caching Strategy](#caching-strategy)
+11. [Widget Architecture](#widget-architecture)
+12. [Database Schema](#database-schema)
+13. [API Route Organization](#api-route-organization)
+14. [Build and Deployment Process](#build-and-deployment-process)
 
 ---
 
 ## System Overview
 
-The Magic Mirror is a **Next.js 16-based smart display application** designed to run on a Raspberry Pi in portrait mode (1080x2560). It displays real-time information through modular widgets that fetch data from various external APIs server-side, with client-side polling for updates.
-
-### Core Principles
-
-1. **Server-Side Data Fetching** - All external API calls happen server-side for security and caching
-2. **Client-Side Polling** - Widgets refresh at appropriate intervals (5-30 minutes)
-3. **Graceful Degradation** - Demo/fallback data when external APIs fail
-4. **Monorepo Structure** - Single Next.js app with clear separation of concerns
-5. **Continuous Deployment** - Push-to-deploy via GitHub Actions self-hosted runner
+The Magic Mirror is a **Next.js 16 full-stack application** designed for a 1080x2560 portrait display on a Raspberry Pi 4. The architecture follows a **proxy pattern** for external APIs, with server-side data fetching and client-side widget rendering. The system is optimized for the Pi's constraints with GPU-accelerated animations, strategic caching, and a minimalist design philosophy called "Quiet Presence."
 
 ### High-Level Architecture
 
-```
-┌─────────────────────────────────────────────────────────┐
-│                    Magic Mirror Display                 │
-│              (Chromium Kiosk on Raspberry Pi)           │
-│                                                          │
-│  ┌──────────┐  ┌──────────┐  ┌──────────┐             │
-│  │  Clock   │  │ Weather  │  │ Calendar │  ... (8 widgets)
-│  └────┬─────┘  └────┬─────┘  └────┬─────┘             │
-│       │             │             │                     │
-│       └─────────────┼─────────────┘                     │
-│                     │                                   │
-└─────────────────────┼───────────────────────────────────┘
-                      │ HTTP polling (5-30 min intervals)
-                      ▼
-┌─────────────────────────────────────────────────────────┐
-│               Next.js Server (port 3000)                │
-│                     (pm2-managed)                       │
-│                                                          │
-│  ┌────────────────────────────────────────────────┐    │
-│  │          API Routes (/api/*)                   │    │
-│  │  ┌─────────┐  ┌─────────┐  ┌──────────┐       │    │
-│  │  │ Weather │  │Calendar │  │  News    │       │    │
-│  │  └────┬────┘  └────┬────┘  └────┬─────┘       │    │
-│  └───────┼────────────┼────────────┼──────────────┘    │
-└──────────┼────────────┼────────────┼───────────────────┘
-           │            │            │
-           ▼            ▼            ▼
-  ┌─────────────┐ ┌──────────┐ ┌─────────┐
-  │ Open-Meteo  │ │  iCloud  │ │   RSS   │
-  │     API     │ │  iCal    │ │  Feeds  │
-  └─────────────┘ └──────────┘ └─────────┘
-```
+The application uses **Next.js App Router** with a clear separation between public mirror routes and authenticated admin routes. Server-side API routes act as proxies to external services (Open-Meteo, TomTom, OpenRouter, Spotify, iCal feeds, RSS feeds), providing caching, data transformation, and security isolation. Client-side widgets poll these server routes at configurable intervals, displaying real-time information with smooth GPU-accelerated animations.
+
+### Key Design Patterns
+
+1. **Proxy Pattern**: All external API calls go through server-side Next.js API routes for caching and security
+2. **Polling Pattern**: Client-side widgets use `setInterval` to refresh data (no WebSocket complexity)
+3. **Version-Aware Refresh**: Server tracks build timestamp; client auto-refreshes on deployment
+4. **Graceful Degradation**: Demo/fallback data prevents widget failures when APIs are unavailable
+5. **Configuration Versioning**: Admin changes increment a version number that triggers mirror refresh
+
+### Target Environment
+
+- **Display**: 1080x2560 portrait orientation (rotated monitor)
+- **Hardware**: Raspberry Pi 4 (4GB RAM, ARM64)
+- **Browser**: Chromium in kiosk mode (fullscreen, no chrome)
+- **Network**: Local network only (192.168.1.0/24)
+- **Runtime**: Node.js 22.21.0 with pm2 process manager
 
 ---
 
-## Architecture Diagrams
-
-### System Component Diagram
+## Component Architecture Diagram
 
 ```mermaid
 graph TB
-    subgraph "Raspberry Pi Hardware"
-        Browser[Chromium Kiosk<br/>1080x2560 Portrait]
-        Server[Next.js Server<br/>pm2-managed]
-        DB[(SQLite Database<br/>Admin Config)]
-        Runner[GitHub Actions<br/>Self-Hosted Runner]
+    subgraph "Browser (Chromium Kiosk Mode)"
+        Display[Mirror Display<br/>1080x2560]
+        Admin[Admin Portal<br/>/admin/*]
     end
 
-    subgraph "Client-Side Widgets"
-        Clock[Clock Widget]
-        Weather[Weather Widget]
-        Calendar[Calendar Widget]
-        News[News Widget]
-        Summary[AI Summary Widget]
-        Spotify[Spotify Widget]
-        Commute[Commute Widget]
-        Feast[Feast Day Widget]
+    subgraph "Next.js Server (Port 3000)"
+        Router[App Router]
+
+        subgraph "Public API Routes"
+            PublicAPI["/api/*"]
+            Calendar["/api/calendar"]
+            Commute["/api/commute"]
+            FeastDay["/api/feast-day"]
+            News["/api/news"]
+            Spotify["/api/spotify/now-playing"]
+            Summary["/api/summary"]
+            Version["/api/version"]
+            Weather["/api/weather"]
+            ConfigVer["/api/config-version"]
+        end
+
+        subgraph "Admin API Routes (Protected)"
+            AdminAPI["/api/admin/*"]
+            AdminSettings["/api/admin/settings"]
+            AdminWidgets["/api/admin/widgets"]
+            AdminMirror["/api/admin/mirror/*"]
+            AdminWeather["/api/admin/weather"]
+            AdminAI["/api/admin/ai-*"]
+            AdminCalendar["/api/admin/calendar"]
+            AdminCommute["/api/admin/commute"]
+            AdminGeocode["/api/admin/geocode/search"]
+        end
+
+        subgraph "OAuth Routes"
+            SpotifyAuth["/api/spotify/authorize"]
+            SpotifyCallback["/api/spotify/callback"]
+        end
+
+        Auth[NextAuth v5<br/>JWT Sessions]
     end
 
-    subgraph "Server-Side API Routes"
-        WeatherAPI[/api/weather]
-        CalendarAPI[/api/calendar]
-        NewsAPI[/api/news]
-        SummaryAPI[/api/summary]
-        SpotifyAPI[/api/spotify/now-playing]
-        CommuteAPI[/api/commute]
-        FeastAPI[/api/feast-day]
-        VersionAPI[/api/version]
+    subgraph "Data Layer"
+        DB[(SQLite Database<br/>Prisma ORM)]
+        Cache[Server-Side Cache<br/>Next.js revalidate]
     end
 
     subgraph "External Services"
-        OpenMeteo[Open-Meteo<br/>Weather API]
-        iCloud[iCloud/Google<br/>iCal Feeds]
-        RSS[RSS News Feeds<br/>NY Times, BBC, etc.]
-        OpenRouter[OpenRouter<br/>Claude 3 Haiku]
-        SpotifyExt[Spotify API<br/>OAuth]
-        TomTom[TomTom Routing<br/>Traffic API]
-        Romcal[romcal Library<br/>Local Calendar]
+        OpenMeteo[Open-Meteo API<br/>Weather Data]
+        OpenRouter[OpenRouter API<br/>AI Summaries]
+        TomTom[TomTom API<br/>Traffic Routing]
+        SpotifyAPI[Spotify API<br/>Now Playing]
+        iCal[iCal Feeds<br/>iCloud/Google]
+        RSS[RSS Feeds<br/>News Sources]
+        Romcal[romcal Library<br/>Catholic Calendar]
     end
 
     subgraph "CI/CD Pipeline"
         GitHub[GitHub Repository]
-        Actions[GitHub Actions<br/>Workflow]
+        Actions[GitHub Actions]
+        Runner[Self-Hosted Runner<br/>on Raspberry Pi]
     end
 
-    %% Client → Server
-    Browser --> Clock
-    Browser --> Weather
-    Browser --> Calendar
-    Browser --> News
-    Browser --> Summary
-    Browser --> Spotify
-    Browser --> Commute
-    Browser --> Feast
+    %% Browser to Server
+    Display -->|HTTP GET /| Router
+    Display -->|Poll /api/*| PublicAPI
+    Admin -->|Protected routes| AdminAPI
+    Admin -->|Login| Auth
 
-    Clock --> VersionAPI
-    Weather --> WeatherAPI
-    Calendar --> CalendarAPI
-    News --> NewsAPI
-    Summary --> SummaryAPI
-    Spotify --> SpotifyAPI
-    Commute --> CommuteAPI
-    Feast --> FeastAPI
+    %% Router to APIs
+    Router --> PublicAPI
+    Router --> AdminAPI
+    Router --> Auth
 
-    %% Server → External APIs
-    WeatherAPI --> OpenMeteo
-    CalendarAPI --> iCloud
-    NewsAPI --> RSS
-    SummaryAPI --> OpenRouter
-    SummaryAPI --> WeatherAPI
-    SummaryAPI --> CalendarAPI
-    SummaryAPI --> NewsAPI
-    SpotifyAPI --> SpotifyExt
-    CommuteAPI --> TomTom
-    FeastAPI --> Romcal
+    PublicAPI --> Calendar
+    PublicAPI --> Commute
+    PublicAPI --> FeastDay
+    PublicAPI --> News
+    PublicAPI --> Spotify
+    PublicAPI --> Summary
+    PublicAPI --> Version
+    PublicAPI --> Weather
+    PublicAPI --> ConfigVer
 
-    %% Database connections
-    Server --> DB
-    VersionAPI -.-> DB
+    AdminAPI --> AdminSettings
+    AdminAPI --> AdminWidgets
+    AdminAPI --> AdminMirror
+    AdminAPI --> AdminWeather
+    AdminAPI --> AdminAI
+    AdminAPI --> AdminCalendar
+    AdminAPI --> AdminCommute
+    AdminAPI --> AdminGeocode
+
+    %% Admin Auth
+    AdminAPI -->|Validate session| Auth
+    Auth -->|Check credentials| DB
+
+    %% API to External Services
+    Calendar -->|Fetch & parse| iCal
+    Commute -->|Routing API| TomTom
+    FeastDay -.->|Local library| Romcal
+    News -->|Fetch & parse| RSS
+    Spotify -->|OAuth refresh| SpotifyAPI
+    Summary -->|AI generation| OpenRouter
+    Summary --> Weather
+    Summary --> Calendar
+    Summary --> News
+    Weather -->|Proxy request| OpenMeteo
+    AdminGeocode -->|Search API| TomTom
+
+    %% Database
+    AdminSettings -->|CRUD| DB
+    AdminWidgets -->|CRUD| DB
+    AdminMirror -->|Status| DB
+    AdminWeather -->|Settings| DB
+    AdminAI -->|Settings| DB
+    AdminCalendar -->|Feeds| DB
+    AdminCommute -->|Routes| DB
+    ConfigVer -->|Poll version| DB
+
+    %% Cache
+    Weather -.->|15 min cache| Cache
+    Commute -.->|5 min cache| Cache
+    News -.->|5 min cache| Cache
+    AdminGeocode -.->|24h cache| Cache
 
     %% CI/CD
-    GitHub --> Actions
-    Actions --> Runner
-    Runner --> Server
+    GitHub -->|Push to main| Actions
+    Actions -->|Trigger workflow| Runner
+    Runner -->|Deploy script| Router
+    Runner -->|Health check| Version
 
     %% Styling
-    classDef widget fill:#4CAF50,stroke:#333,stroke-width:2px,color:#fff
-    classDef api fill:#2196F3,stroke:#333,stroke-width:2px,color:#fff
-    classDef external fill:#FF9800,stroke:#333,stroke-width:2px,color:#fff
-    classDef infra fill:#9C27B0,stroke:#333,stroke-width:2px,color:#fff
+    classDef external fill:#e1f5ff,stroke:#01579b,stroke-width:2px
+    classDef database fill:#fff9c4,stroke:#f57f17,stroke-width:2px
+    classDef auth fill:#ffebee,stroke:#c62828,stroke-width:2px
+    classDef cicd fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px
 
-    class Clock,Weather,Calendar,News,Summary,Spotify,Commute,Feast widget
-    class WeatherAPI,CalendarAPI,NewsAPI,SummaryAPI,SpotifyAPI,CommuteAPI,FeastAPI,VersionAPI api
-    class OpenMeteo,iCloud,RSS,OpenRouter,SpotifyExt,TomTom,Romcal external
-    class Browser,Server,DB,GitHub,Actions,Runner infra
+    class OpenMeteo,OpenRouter,TomTom,SpotifyAPI,iCal,RSS,Romcal external
+    class DB,Cache database
+    class Auth auth
+    class GitHub,Actions,Runner cicd
 ```
 
 ---
 
-### Data Flow Diagram
+## Data Flow Diagram
 
 ```mermaid
 sequenceDiagram
-    participant Widget as Widget Component<br/>(Client-Side)
-    participant Cache as Next.js Cache<br/>(Server-Side)
-    participant API as API Route<br/>(Server-Side)
-    participant External as External API<br/>(Open-Meteo, etc.)
+    participant Widget as Widget Component
+    participant API as API Route
+    participant Cache as Server Cache
+    participant External as External Service
+    participant DB as Database
 
-    Note over Widget: User opens mirror<br/>Widget mounts
+    Note over Widget,DB: Standard Widget Lifecycle
 
+    Widget->>Widget: Component mounts
     Widget->>API: GET /api/weather
 
-    alt Cache Hit (< 15 min old)
-        Cache-->>Widget: Return cached data
-        Note over Widget: Display weather<br/>immediately
-    else Cache Miss or Expired
-        API->>External: Fetch fresh data
-        External-->>API: Weather JSON
-        Note over API: Transform data<br/>Round temperatures<br/>Simplify structure
-        API->>Cache: Store with revalidate: 900s
-        API-->>Widget: Return transformed data
-        Note over Widget: Display weather
+    API->>Cache: Check cache
+    alt Cache Hit (< 15 min)
+        Cache->>API: Return cached data
+    else Cache Miss
+        API->>External: Fetch weather data
+        External->>API: Weather response
+        API->>API: Transform data
+        API->>Cache: Store (revalidate: 900s)
     end
 
-    Note over Widget: Wait 15 minutes
-
-    Widget->>API: GET /api/weather (refresh)
-    Note over API,Cache: Cache still valid
-    Cache-->>Widget: Return cached data
+    API->>Widget: JSON response
+    Widget->>Widget: setState(data)
+    Widget->>Widget: Render display
 
     Note over Widget: Wait 15 minutes
 
-    Widget->>API: GET /api/weather (refresh)
-    Note over API,Cache: Cache expired
-    API->>External: Fetch fresh data
-    External-->>API: Updated weather
-    API->>Cache: Update cache
-    API-->>Widget: Return new data
-    Note over Widget: Update display
+    Widget->>API: Refresh (setInterval)
+    API->>Cache: Check cache
+    Cache->>API: Still valid
+    API->>Widget: Cached response
+
+    Note over Widget,DB: Admin Settings Flow
+
+    participant Admin as Admin Portal
+    participant AdminAPI as Admin API
+    participant ConfigVer as Config Version
+
+    Admin->>AdminAPI: PUT /api/admin/weather
+    AdminAPI->>DB: Update settings
+    AdminAPI->>ConfigVer: Increment version
+    ConfigVer->>DB: version++
+    AdminAPI->>Admin: Success
+
+    Note over Widget: Widget polls /api/config-version
+
+    Widget->>ConfigVer: GET /api/config-version
+    ConfigVer->>DB: Read version
+    DB->>ConfigVer: version: 43
+    ConfigVer->>Widget: { version: 43 }
+    Widget->>Widget: Detect version change
+    Widget->>Widget: window.location.reload()
+
+    Note over Widget,DB: Deployment Auto-Refresh
+
+    participant Deploy as Deploy Script
+    participant VersionAPI as /api/version
+    participant VersionCheck as VersionChecker
+
+    Deploy->>Deploy: npm run build
+    Deploy->>Deploy: Set BUILD_TIME=1735686000000
+    Deploy->>Deploy: pm2 restart
+
+    VersionCheck->>VersionAPI: GET /api/version (every 30s)
+    VersionAPI->>VersionCheck: { buildTime: "1735686000000" }
+    VersionCheck->>VersionCheck: Compare with localStorage
+    VersionCheck->>VersionCheck: Detect new build!
+    VersionCheck->>VersionCheck: Show "Updating..."
+    VersionCheck->>VersionCheck: window.location.reload()
 ```
 
-#### Calendar Data Flow (Merge Pattern)
+---
+
+## Deployment Architecture
 
 ```mermaid
 graph LR
-    subgraph "Client Side"
-        CalWidget[Calendar Widget]
-    end
-
-    subgraph "Server Side"
-        CalAPI[/api/calendar]
-    end
-
-    subgraph "External Sources"
-        iCloud1[iCloud Calendar 1<br/>Primary]
-        iCloud2[iCloud Calendar 2<br/>Secondary]
-    end
-
-    subgraph "Processing"
-        Fetch1[Fetch Feed 1]
-        Fetch2[Fetch Feed 2]
-        Parse1[Parse iCal<br/>node-ical]
-        Parse2[Parse iCal<br/>node-ical]
-        Merge[Merge & Sort<br/>by start time]
-        Categorize[Categorize<br/>Today/Tomorrow/Upcoming]
-    end
-
-    CalWidget -->|GET request| CalAPI
-    CalAPI -->|Parallel fetch| Fetch1
-    CalAPI -->|Parallel fetch| Fetch2
-    Fetch1 --> iCloud1
-    Fetch2 --> iCloud2
-    iCloud1 --> Parse1
-    iCloud2 --> Parse2
-    Parse1 --> Merge
-    Parse2 --> Merge
-    Merge --> Categorize
-    Categorize -->|JSON response| CalWidget
-
-    style Merge fill:#4CAF50,stroke:#333,stroke-width:2px,color:#fff
-    style Categorize fill:#4CAF50,stroke:#333,stroke-width:2px,color:#fff
-```
-
----
-
-### Deployment Architecture
-
-```mermaid
-graph TB
     subgraph "Development Machine"
         Dev[Developer]
-        Git[Git Repository<br/>Local]
+        Git[Git Client]
     end
 
     subgraph "GitHub Cloud"
-        Repo[GitHub Repository<br/>jjones-wps/jjones-magic-mirror]
-        Actions[GitHub Actions<br/>deploy.yml Workflow]
+        Repo[GitHub Repository<br/>main branch]
+        Actions[GitHub Actions<br/>Workflow Engine]
     end
 
-    subgraph "Raspberry Pi 192.168.1.213"
-        Runner[Self-Hosted Runner<br/>~/actions-runner]
-        Deploy[deploy.sh Script]
-        Files[Project Files<br/>~/magic-mirror/]
-        PM2[pm2 Process Manager]
-        NextJS[Next.js Server<br/>Port 3000]
-        Chromium[Chromium Kiosk<br/>http://localhost:3000]
-        Display[HDMI Display<br/>1080x2560]
+    subgraph "Raspberry Pi (192.168.1.213)"
+        Runner[Actions Runner<br/>systemd service]
+        Deploy[Deploy Script<br/>deploy.sh]
+
+        subgraph "Test Phase"
+            GitPull[git reset --hard]
+            NPMInstall[npm ci]
+            Audit[npm audit]
+            Tests[npm run test:ci]
+        end
+
+        subgraph "Build Phase"
+            Build[npm run build<br/>Set BUILD_TIME]
+            Prisma[prisma generate]
+        end
+
+        subgraph "Deploy Phase"
+            PM2[pm2 restart<br/>magic-mirror]
+            Health[Health Check<br/>HTTP 200]
+        end
+
+        Server[Next.js Server<br/>Port 3000]
+        Kiosk[Chromium Kiosk<br/>Fullscreen]
     end
 
-    %% Development flow
-    Dev -->|git push origin main| Git
-    Git -->|push trigger| Repo
-    Repo -->|webhook| Actions
+    Dev -->|git push| Git
+    Git -->|Push to main| Repo
+    Repo -->|Webhook trigger| Actions
+    Actions -->|Execute workflow| Runner
 
-    %% CI/CD flow
-    Actions -->|Job 1: Run Tests| Actions
-    Actions -->|✓ Tests Pass| Runner
-    Runner -->|Job 2: Deploy| Deploy
+    Runner --> GitPull
+    GitPull --> NPMInstall
+    NPMInstall --> Audit
+    Audit --> Tests
+    Tests -->|Pass| Build
+    Build --> Prisma
+    Prisma --> PM2
+    PM2 --> Server
+    PM2 --> Health
+    Health -->|Verified| Runner
 
-    %% Deployment steps
-    Deploy -->|1. git reset --hard| Files
-    Deploy -->|2. npm ci| Files
-    Deploy -->|3. npm run build| Files
-    Deploy -->|4. pm2 restart| PM2
-    PM2 -->|manage| NextJS
-
-    %% Runtime flow
-    NextJS -->|serve| Chromium
-    Chromium -->|render| Display
-
-    %% Health check
-    Deploy -->|5. curl localhost:3000| NextJS
-    NextJS -.->|HTTP 200| Deploy
-    Deploy -.->|✓ Success| Actions
+    Server -->|Serve app| Kiosk
 
     %% Styling
-    classDef dev fill:#4CAF50,stroke:#333,stroke-width:2px,color:#fff
-    classDef github fill:#2196F3,stroke:#333,stroke-width:2px,color:#fff
-    classDef pi fill:#FF9800,stroke:#333,stroke-width:2px,color:#000
-    classDef deploy fill:#9C27B0,stroke:#333,stroke-width:2px,color:#fff
+    classDef dev fill:#e3f2fd,stroke:#1976d2,stroke-width:2px
+    classDef cloud fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    classDef pi fill:#f3e5f5,stroke:#6a1b9a,stroke-width:2px
+    classDef phase fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px
 
     class Dev,Git dev
-    class Repo,Actions github
-    class Runner,Deploy,Files,PM2,NextJS,Chromium,Display pi
+    class Repo,Actions cloud
+    class Runner,Deploy,Server,Kiosk pi
+    class GitPull,NPMInstall,Audit,Tests,Build,Prisma,PM2,Health phase
 ```
 
-#### Deployment Sequence
+### Deployment Workflow Details
 
-```mermaid
-sequenceDiagram
-    participant Dev as Developer
-    participant GitHub
-    participant Runner as Pi Runner
-    participant Deploy as deploy.sh
-    participant PM2
-    participant NextJS as Next.js Server
-    participant Health as Health Check
+**Trigger**: Push to `main` branch (excluding `*.md` and `docs/**`)
 
-    Dev->>GitHub: git push origin main
-    Note over GitHub: Trigger workflow<br/>deploy.yml
+**Concurrency**: One deployment at a time (cancel in-progress on new push)
 
-    GitHub->>Runner: Start "Run Tests" job
-    Runner->>Runner: npm ci
-    Runner->>Runner: npm run test:ci
-    alt Tests Pass
-        Runner-->>GitHub: ✅ Tests passed (296 tests, 88.88% coverage)
-    else Tests Fail
-        Runner-->>GitHub: ❌ Tests failed
-        Note over GitHub: Deployment stops
-    end
+**Duration**: 3-5 minutes total
 
-    GitHub->>Runner: Start "Deploy to Pi" job
-    Runner->>Deploy: Execute deploy.sh
+**Phases**:
+1. **Test Phase** (1-2 min): Git pull, dependency install, security audit, full test suite (296 tests)
+2. **Build Phase** (1-2 min): Production build with BUILD_TIME timestamp, Prisma client generation
+3. **Deploy Phase** (< 1 min): pm2 restart, health check verification
 
-    Note over Deploy: Deployment Steps
-    Deploy->>Deploy: 1. git reset --hard origin/main
-    Deploy->>Deploy: 2. npm ci (install deps)
-    Deploy->>Deploy: 3. prisma generate
-    Deploy->>Deploy: 4. npm run build
+**Success Indicators**:
+- All 296 tests pass with 88.88% coverage
+- npm audit shows no high/critical vulnerabilities
+- Health check returns HTTP 200 from `/api/version`
+- pm2 reports process running
 
-    Deploy->>PM2: pm2 restart magic-mirror
-    PM2->>NextJS: Restart server
-    NextJS-->>PM2: Server ready
-
-    Deploy->>Health: curl http://localhost:3000
-    Health-->>Deploy: HTTP 200 OK
-
-    Deploy-->>Runner: ✅ Deployment successful
-    Runner-->>GitHub: Job complete
-
-    Note over NextJS: Server running<br/>Build time: 1735686000000
-```
+**Rollback**: Manual via `git revert` + push (triggers new deployment)
 
 ---
 
-### Authentication Flow
-
-**⚠️ Note:** Admin portal currently incomplete. This diagram represents planned architecture.
+## Authentication Flow
 
 ```mermaid
 sequenceDiagram
-    participant User
-    participant Browser
-    participant NextAuth as NextAuth API<br/>/api/auth
-    participant Middleware as Next.js Middleware
-    participant AdminAPI as Admin API Route
+    participant User as Admin User
+    participant Login as /admin/login
+    participant NextAuth as NextAuth v5
     participant DB as SQLite Database
+    participant Session as JWT Session
+    participant AdminPage as Admin Page
+    participant AdminAPI as Admin API
 
-    Note over User,DB: Initial Login
-    User->>Browser: Navigate to /admin/login
-    Browser->>Browser: Render login form
-    User->>Browser: Submit email + password
-    Browser->>NextAuth: POST /api/auth/signin
+    Note over User,AdminAPI: Initial Login
+
+    User->>Login: Navigate to /admin
+    Login->>Login: Redirect to /admin/login
+    User->>Login: Enter email + password
+    Login->>NextAuth: POST /api/auth/signin
 
     NextAuth->>DB: Query user by email
-    DB-->>NextAuth: User record (hashed password)
+    DB->>NextAuth: User record
     NextAuth->>NextAuth: bcrypt.compare(password, hash)
 
     alt Password Valid
-        NextAuth->>NextAuth: Generate JWT<br/>Claims: id, email, role
-        NextAuth->>Browser: Set HTTP-only cookie<br/>auth-token
-        NextAuth-->>Browser: Redirect to /admin
-        Note over Browser: Cookie stored<br/>Subsequent requests<br/>include token
+        NextAuth->>DB: Update lastLoginAt
+        NextAuth->>DB: Create activity log (auth.login.success)
+        NextAuth->>Session: Create JWT token
+        Session->>Session: Set HTTP-only cookie
+        NextAuth->>Login: Redirect to /admin
+        Login->>User: Show admin dashboard
     else Password Invalid
-        NextAuth-->>Browser: 401 Unauthorized
-        Browser->>User: Show error message
+        NextAuth->>DB: Create activity log (auth.login.failed)
+        NextAuth->>Login: Return error
+        Login->>User: Show error message
     end
 
-    Note over User,DB: Protected API Request
-    User->>Browser: Click "Refresh Mirror"
-    Browser->>AdminAPI: POST /admin/mirror/refresh<br/>Cookie: auth-token
+    Note over User,AdminAPI: Authenticated API Request
 
-    Middleware->>Middleware: Extract JWT from cookie
-    Middleware->>Middleware: Verify signature<br/>Check expiration
+    User->>AdminPage: Interact with UI
+    AdminPage->>AdminAPI: PUT /api/admin/weather
+    AdminAPI->>NextAuth: Validate session cookie
 
-    alt Token Valid
-        Middleware->>AdminAPI: Forward request<br/>+ decoded JWT
-        AdminAPI->>DB: Update systemState
-        DB-->>AdminAPI: Success
-        AdminAPI-->>Browser: 200 OK
-        Browser->>User: Show success message
-    else Token Invalid/Expired
-        Middleware-->>Browser: 401 Redirect to /login
-        Browser->>User: Show login page
+    alt Session Valid
+        NextAuth->>AdminAPI: User object
+        AdminAPI->>DB: Execute request
+        DB->>AdminAPI: Success
+        AdminAPI->>DB: Create activity log
+        AdminAPI->>AdminPage: JSON response
+        AdminPage->>User: Update UI
+    else Session Invalid/Expired
+        NextAuth->>AdminAPI: null
+        AdminAPI->>AdminPage: 401 Unauthorized
+        AdminPage->>Login: Redirect to /admin/login
     end
 
-    Note over User,DB: Session Expiration (30 days)
-    Note over Browser: JWT expires
-    Browser->>AdminAPI: Request with expired token
-    Middleware->>Middleware: Verify fails (expired)
-    Middleware-->>Browser: 401 Redirect to /login
-    User->>Browser: Re-authenticate
+    Note over User,Session: Session Lifecycle
+
+    Session->>Session: 24-hour expiry
+    Session->>Session: Sliding window (renew on activity)
+
+    User->>NextAuth: POST /api/auth/signout
+    NextAuth->>DB: Create activity log (auth.logout)
+    NextAuth->>Session: Clear cookie
+    NextAuth->>Login: Redirect to /admin/login
 ```
 
-#### JWT Token Structure
+### Authentication Details
 
-```json
-{
-  "header": {
-    "alg": "HS256",
-    "typ": "JWT"
-  },
-  "payload": {
-    "id": "user-uuid",
-    "email": "admin@example.com",
-    "role": "admin",
-    "iat": 1735686000,
-    "exp": 1738278000
-  },
-  "signature": "HMACSHA256(...)"
+**Session Strategy**: JWT tokens (not database sessions)
+
+**Token Storage**: HTTP-only cookies (client cannot access JavaScript)
+
+**Token Expiry**: 24 hours (configurable in `src/lib/auth/config.ts`)
+
+**Password Hashing**: bcrypt with 12 rounds
+
+**Activity Logging**: All auth events logged to `activityLog` table
+
+**Protected Routes**: All `/api/admin/*` routes check session via middleware
+
+**CSRF Protection**: NextAuth v5 built-in CSRF token validation
+
+---
+
+## Architectural Decisions
+
+### 7.1 Why SQLite for Admin Data?
+
+**Decision**: Use SQLite instead of PostgreSQL or MySQL for the admin database.
+
+**Reasoning**:
+- Single-user admin portal (no concurrent write contention)
+- Simple deployment (no separate database server process)
+- File-based portability (entire DB in `prisma/magic-mirror.db`)
+- Zero configuration overhead
+- Adequate performance for admin operations (< 100 queries/hour)
+
+**Benefits**:
+- Simplified Pi deployment (one less service to manage)
+- Easy backup (copy single file)
+- Low memory footprint (< 5MB)
+- Works perfectly with Prisma ORM
+
+**Trade-offs**:
+- Not suitable for multi-admin scaling (but not a requirement)
+- Limited concurrent writes (acceptable for admin use case)
+- Migration path exists if needed (Prisma supports multiple databases)
+
+**Implementation**: `datasource db { provider = "sqlite" }` in `prisma/schema.prisma`
+
+---
+
+### 7.2 Why Client-Side Widget Refresh?
+
+**Decision**: Use `setInterval` in React components instead of server-side polling or WebSockets.
+
+**Reasoning**:
+- Simplicity: No WebSocket server, no SSE complexity
+- Browser-native caching works naturally
+- Each widget controls its own refresh rate
+- Works offline (shows last known data)
+- No server-side session management needed
+
+**Benefits**:
+- Predictable resource usage (server only responds to requests)
+- Natural backpressure (if server slow, widgets wait)
+- Easy to debug (see requests in DevTools Network tab)
+- Flexible refresh intervals per widget type
+
+**Trade-offs**:
+- Not real-time (polling introduces delay)
+- Multiple clients would make redundant requests (but single-client use case)
+- Network traffic even when display idle (mitigated by server caching)
+
+**Implementation**:
+```typescript
+useEffect(() => {
+  const fetchData = async () => { /* ... */ };
+  fetchData(); // Initial load
+  const interval = setInterval(fetchData, REFRESH_INTERVAL);
+  return () => clearInterval(interval); // Cleanup
+}, []);
+```
+
+**Refresh Intervals**:
+- Weather: 15 minutes (weather changes slowly)
+- Calendar: 5 minutes (events rarely change)
+- News: 10 minutes (hourly news cycles)
+- Spotify: 15 seconds (track changes)
+- Summary: 30 minutes (AI cost consideration)
+- Commute: 5 minutes (traffic updates)
+- FeastDay: 1 hour (daily data)
+- Version: 30 seconds (deployment detection)
+
+---
+
+### 7.3 Why Server-Side API Caching?
+
+**Decision**: Use Next.js `revalidate` headers instead of client-side caching or no caching.
+
+**Reasoning**:
+- Reduce external API calls (rate limits and cost)
+- Improve response times (serve from memory)
+- Centralized cache invalidation
+- Transparent to client (no cache management logic)
+
+**Benefits**:
+- 15-minute weather cache: 96 API calls/day instead of 1,440
+- 5-minute commute cache: Stays within TomTom free tier (2,500 req/day)
+- Instant responses for cached data
+- Automatic cache invalidation (Next.js handles staleness)
+
+**Trade-offs**:
+- Slight staleness (acceptable for use case)
+- Memory usage (minimal for JSON responses)
+- No cross-request cache sharing in dev mode (production only)
+
+**Implementation**:
+```typescript
+export async function GET(request: Request) {
+  // ... fetch data ...
+  return Response.json(data, {
+    headers: { 'Cache-Control': 's-maxage=900, stale-while-revalidate' }
+  });
 }
 ```
 
----
-
-### Widget Lifecycle
-
-```mermaid
-stateDiagram-v2
-    [*] --> Mounting: Component renders
-
-    Mounting --> FetchingInitial: useEffect() runs
-    FetchingInitial --> DisplayingData: API call succeeds
-    FetchingInitial --> DisplayingError: API call fails
-    FetchingInitial --> DisplayingDemo: Fallback to demo data
-
-    DisplayingData --> PollingInterval: Set interval timer
-    DisplayingError --> PollingInterval: Set interval timer
-    DisplayingDemo --> PollingInterval: Set interval timer
-
-    PollingInterval --> FetchingUpdate: Timer fires (5-30 min)
-    FetchingUpdate --> DisplayingData: Update succeeds
-    FetchingUpdate --> DisplayingError: Update fails
-    FetchingUpdate --> DisplayingData: Keep previous data
-
-    DisplayingData --> Unmounting: User navigates away
-    DisplayingError --> Unmounting: User navigates away
-    DisplayingDemo --> Unmounting: User navigates away
-
-    Unmounting --> Cleanup: clearInterval()
-    Cleanup --> [*]
-
-    note right of FetchingInitial
-        Fetch /api/weather
-        /api/calendar
-        /api/news, etc.
-    end note
-
-    note right of PollingInterval
-        Weather: 15 min
-        Calendar: 5 min
-        News: 10 min
-        Spotify: 10 sec
-    end note
-
-    note right of DisplayingData
-        Animate transitions
-        Update UI
-        Cache in state
-    end note
-```
+**Cache Durations**: See [Caching Strategy](#caching-strategy) section for full table.
 
 ---
 
-### Caching Strategy
+### 7.4 Why Version-Aware Auto-Refresh?
 
-The application uses a multi-tier caching approach to optimize performance and reduce external API calls.
+**Decision**: Implement build timestamp polling instead of manual refresh or no refresh.
 
-```mermaid
-graph TB
-    subgraph "Client Side (Browser)"
-        Widget[Widget Component]
-        LocalState[Local State<br/>useState/useEffect]
-        MemCache[In-Memory Cache<br/>Component State]
-    end
+**Reasoning**:
+- Mirror needs to reload after deployments without physical access
+- Users should always see latest version
+- Avoid stale JavaScript bundles
+- Zero manual intervention
 
-    subgraph "Server Side (Next.js)"
-        APIRoute[API Route Handler]
-        NextCache[Next.js Cache<br/>fetch with revalidate]
-        ResponseCache[Response Cache<br/>Memory]
-    end
+**Benefits**:
+- Seamless updates (user sees "Updating..." for 2 seconds)
+- No stale code (always runs latest build)
+- Works with push-to-deploy workflow
+- Simple implementation (poll + compare + reload)
 
-    subgraph "External APIs"
-        External1[Open-Meteo]
-        External2[iCloud iCal]
-        External3[OpenRouter AI]
-        External4[Spotify]
-        External5[TomTom]
-    end
+**Trade-offs**:
+- 30-second polling adds minor network traffic
+- Brief flash during reload (acceptable)
+- Requires localStorage (available in Chromium)
 
-    %% Request Flow
-    Widget -->|1. Fetch data<br/>Every N minutes| APIRoute
+**Implementation**:
+1. `deploy.sh` sets `BUILD_TIME=$(date +%s%3N)` during build
+2. `/api/version` returns `BUILD_TIME` environment variable
+3. `VersionChecker` component polls every 30 seconds
+4. On mismatch, shows "Updating..." and calls `window.location.reload()`
 
-    APIRoute -->|2. Check cache| NextCache
+**Production Behavior**: Auto-refresh on build change
+**Development Behavior**: Full page refresh every 60 seconds (for hot reload assistance)
 
-    NextCache -->|Cache HIT<br/>< revalidate time| APIRoute
-    NextCache -->|Cache MISS<br/>or expired| External1
-    NextCache -->|Cache MISS<br/>or expired| External2
-    NextCache -->|Cache MISS<br/>or expired| External3
-    NextCache -->|Cache MISS<br/>or expired| External4
-    NextCache -->|Cache MISS<br/>or expired| External5
+---
 
-    External1 -->|Fresh data| NextCache
-    External2 -->|Fresh data| NextCache
-    External3 -->|Fresh data| NextCache
-    External4 -->|Fresh data| NextCache
-    External5 -->|Fresh data| NextCache
+### 7.5 Why Proxy Pattern for External APIs?
 
-    NextCache -->|Store with<br/>revalidate timer| ResponseCache
-    APIRoute -->|3. Return JSON| Widget
-    Widget -->|4. Store in state| MemCache
+**Decision**: All external API calls go through Next.js API routes instead of direct client calls.
 
-    %% Cache Lifetimes
-    note1[Weather: 15 min<br/>Calendar: 5 min<br/>News: 15 min]
-    note2[AI Summary: 30 min<br/>Spotify: Real-time<br/>Commute: 5 min]
+**Reasoning**:
+- Security: API keys never exposed to client
+- Caching: Server-side revalidate headers
+- Transformation: Simplify responses for client consumption
+- Error handling: Graceful degradation with demo data
+- CORS: No cross-origin issues
 
-    NextCache -.-> note1
-    MemCache -.-> note2
+**Benefits**:
+- Spotify refresh token stays server-side (secure)
+- OpenRouter API key not in bundle (secure)
+- TomTom API key protected (secure)
+- Consistent error handling across all widgets
+- Easy to add rate limiting later
 
-    %% Styling
-    classDef client fill:#4CAF50,stroke:#2e7d32,stroke-width:2px,color:#fff
-    classDef server fill:#2196F3,stroke:#1565c0,stroke-width:2px,color:#fff
-    classDef external fill:#FF9800,stroke:#e65100,stroke-width:2px,color:#000
-    classDef cache fill:#9C27B0,stroke:#6a1b9a,stroke-width:2px,color:#fff
+**Trade-offs**:
+- Extra network hop (client → server → external API)
+- Server must be running (not static site)
+- Pi CPU usage for API proxying (minimal impact)
 
-    class Widget,LocalState,MemCache client
-    class APIRoute server
-    class NextCache,ResponseCache cache
-    class External1,External2,External3,External4,External5 external
-```
+**Implementation**: All widgets fetch from `/api/*`, never external URLs.
 
-#### Cache Levels Explained
+---
 
-| Level | Location | Duration | Purpose |
-|-------|----------|----------|---------|
-| **Component State** | Browser (React) | Until widget unmounts | Prevents unnecessary re-fetches during polling intervals |
-| **Next.js Cache** | Server (fetch API) | Per-route configuration | Reduces external API calls, configured via `revalidate` |
-| **API Response Cache** | Server (memory) | Same as Next.js cache | Shared across multiple client requests |
+### 7.6 Why Prisma ORM?
 
-#### Cache Configuration by Endpoint
+**Decision**: Use Prisma instead of raw SQL or other ORMs (Sequelize, TypeORM, Drizzle).
 
+**Reasoning**:
+- Type-safe database queries (TypeScript end-to-end)
+- Excellent Next.js integration
+- Automatic migration generation
+- Cross-database compatibility (SQLite → PostgreSQL migration easy)
+- Built-in connection pooling
+
+**Benefits**:
+- Auto-generated TypeScript types from schema
+- IDE autocomplete for queries
+- Compile-time type checking (catch errors before runtime)
+- Readable schema definition
+- Migration tooling (`prisma migrate dev`)
+
+**Trade-offs**:
+- Additional dependency (but worth it)
+- Learning curve (but excellent docs)
+- Overhead for simple queries (negligible on Pi)
+
+**Example**:
 ```typescript
-// Weather: 15 minutes
-export const revalidate = 900; // seconds
-
-// Calendar: 5 minutes
-export const revalidate = 300;
-
-// News: 15 minutes
-export const revalidate = 900;
-
-// AI Summary: 30 minutes
-export const revalidate = 1800;
-
-// Spotify: No server cache (real-time)
-export const dynamic = 'force-dynamic';
-
-// Commute: 5 minutes
-export const revalidate = 300;
+// Type-safe, no SQL injection risk
+const user = await prisma.user.findUnique({
+  where: { email },
+  include: { activityLogs: true }
+});
 ```
+
+---
+
+### 7.7 Why NextAuth v5 for Authentication?
+
+**Decision**: Use NextAuth (Auth.js) v5 instead of custom JWT or other libraries.
+
+**Reasoning**:
+- Industry-standard solution (used by thousands of apps)
+- Built-in CSRF protection
+- Flexible provider system (credentials, OAuth, etc.)
+- JWT or database sessions (we chose JWT)
+- Excellent Next.js App Router support
+
+**Benefits**:
+- Battle-tested security patterns
+- Activity logging hooks
+- Session management (expiry, renewal)
+- Protected route middleware
+- TypeScript types included
+
+**Trade-offs**:
+- Overkill for single-user admin (but future-proof)
+- Requires session storage (we use JWT to avoid DB)
+- Configuration complexity (but well-documented)
+
+**Implementation**: See `src/lib/auth/config.server.ts` for Prisma integration.
+
+---
+
+### 7.8 Why Framer Motion for Animations?
+
+**Decision**: Use Framer Motion instead of CSS animations or other libraries.
+
+**Reasoning**:
+- Declarative React API (fits component model)
+- GPU-accelerated by default (Pi-friendly)
+- Powerful variants system (consistent animations)
+- Gesture support (future touch interactions)
+- Layout animations (smooth reordering)
+
+**Benefits**:
+- Centralized animation tokens (`src/lib/tokens.ts`)
+- Consistent timing across all widgets
+- Easy stagger animations (waterfall effects)
+- Respects `prefers-reduced-motion`
+- TypeScript support
+
+**Trade-offs**:
+- Bundle size (but tree-shakeable)
+- Overkill for simple fades (but consistency worth it)
+
+**Implementation**: All widgets use variants from `tokens.ts` for consistency.
+
+---
+
+### 7.9 Why Monochrome Design ("Quiet Presence")?
+
+**Decision**: Pure black/white design instead of color palette.
+
+**Reasoning**:
+- Reduce visual fatigue (ambient display, not active screen)
+- Timeless aesthetic (no color trends)
+- Excellent readability (high contrast)
+- Simplifies design decisions (hierarchy via opacity only)
+
+**Benefits**:
+- Opacity-based hierarchy is intuitive
+- Works in any lighting condition
+- GPU-friendly (no color blending)
+- Professional appearance
+
+**Trade-offs**:
+- Less visual distinction between widgets (but hierarchy clear)
+- Harder to show widget state (but opacity works)
+
+**Implementation**: `globals.css` defines opacity scale (hero: 1.0, primary: 0.87, secondary: 0.6, tertiary: 0.38, disabled: 0.2)
+
+---
+
+### 7.10 Why Node-ical for Calendar Parsing?
+
+**Decision**: Use `node-ical` library instead of custom parser or other libraries.
+
+**Reasoning**:
+- Handles complex iCal formats (recurring events, timezones, exceptions)
+- Works with iCloud, Google Calendar, Outlook
+- Active maintenance (last update: 2024)
+- Stream parsing (memory efficient)
+
+**Benefits**:
+- Parses RRULE recurring events correctly
+- Handles timezone conversions
+- Supports VTODO, VALARM, VJOURNAL
+- Minimal dependencies
+
+**Trade-offs**:
+- Server-side only (Node.js APIs)
+- Requires URL fetch (not file-based)
+
+**Implementation**: `/api/calendar` route fetches two iCal URLs, parses with `node-ical`, categorizes by date.
 
 ---
 
@@ -604,501 +758,1206 @@ export const revalidate = 300;
 
 ### Frontend
 
-| Technology | Version | Purpose |
-|------------|---------|---------|
-| **Next.js** | 16.0.0 | React framework with App Router |
-| **React** | 19.0.0 | UI library |
-| **TypeScript** | 5.7.2 | Type safety |
-| **Tailwind CSS** | 4.0.0 | Utility-first styling |
-| **Framer Motion** | 11.15.0 | GPU-accelerated animations |
-| **date-fns** | 4.1.0 | Date manipulation |
+- **Next.js 16** - React framework with App Router, Server Components, API Routes
+- **React 19** - UI library with Suspense, hooks, concurrent rendering
+- **TypeScript 5** - Static typing with strict mode enabled
+- **Tailwind CSS 4** - Utility-first styling with JIT compiler
+- **Framer Motion 12** - GPU-accelerated animations and gestures
+- **date-fns 4** - Date formatting and manipulation (tree-shakeable)
 
 ### Backend
 
-| Technology | Version | Purpose |
-|------------|---------|---------|
-| **Next.js API Routes** | 16.0.0 | Server-side endpoints |
-| **node-ical** | 0.20.1 | iCal feed parsing |
-| **romcal** | 2.0.3 | Catholic liturgical calendar |
-| **Prisma** | 7.2.0 | Database ORM (admin features) |
-| **better-sqlite3** | 11.8.1 | SQLite adapter |
-| **NextAuth v5** | beta.25 | Authentication (admin) |
-| **bcryptjs** | 2.4.3 | Password hashing |
+- **Next.js API Routes** - App Router serverless functions
+- **Prisma 7** - Type-safe ORM with SQLite adapter
+- **NextAuth v5** - Authentication with JWT sessions
+- **bcryptjs** - Password hashing (12 rounds)
+- **node-ical 0.22** - iCalendar parsing for calendar feeds
+- **romcal 1.3** - Catholic liturgical calendar calculations
 
-### Testing
+### Database
 
-| Technology | Version | Purpose |
-|------------|---------|---------|
-| **Jest** | 30.0.0-alpha.7 | Test framework |
-| **React Testing Library** | 16.1.0 | Component testing |
-| **@testing-library/jest-dom** | 6.6.3 | DOM matchers |
-
-### DevOps & Deployment
-
-| Technology | Version | Purpose |
-|------------|---------|---------|
-| **pm2** | Latest | Process manager (Pi) |
-| **GitHub Actions** | N/A | CI/CD pipeline |
-| **ESLint** | 9.17.0 | Code linting |
-| **Prettier** | 3.4.2 | Code formatting |
-| **Husky** | 9.1.7 | Git hooks |
+- **SQLite 3** - Embedded database via `better-sqlite3` driver
+- **Prisma Migrations** - Schema versioning and migration tooling
+- **Database Size**: ~2MB (admin data only, no widget data stored)
 
 ### External APIs
 
-| Service | Purpose | Rate Limit | Cost |
-|---------|---------|------------|------|
-| **Open-Meteo** | Weather data | 10,000 req/day | Free |
-| **TomTom Routing** | Traffic-aware routing | 2,500 req/day | Free tier |
-| **OpenRouter** | AI summaries (Claude 3 Haiku) | Pay-per-use | ~$0.25/1M tokens |
-| **Spotify** | Now playing | Unlimited (OAuth) | Free |
-| **iCloud/Google Calendar** | iCal feeds | Unlimited | Free |
-| **RSS Feeds** | News headlines | Varies by provider | Free |
+- **Open-Meteo** - Weather data (free, no API key required)
+- **OpenRouter** - AI summaries via Claude 3 Haiku (paid, $0.25 per 1M tokens)
+- **TomTom** - Traffic routing and geocoding (free tier: 2,500 req/day)
+- **Spotify** - Now-playing via OAuth refresh token (free)
+- **iCal Feeds** - Calendar events from iCloud/Google (free)
+- **RSS Feeds** - News headlines from NY Times, BBC, NPR, local sources (free)
 
----
+### Testing & Quality
 
-## Key Architectural Decisions
+- **Jest 30** - Test framework with 296 passing tests
+- **React Testing Library 16** - Component testing with user-centric queries
+- **Playwright 1.57** - E2E testing (34 tests, 11 passing)
+- **ESLint 9** - Linting with Next.js rules
+- **Prettier 3** - Code formatting (via eslint-config-prettier)
+- **Husky 9** - Pre-commit hooks (lint + format)
+- **lint-staged 16** - Run linters on staged files only
 
-### 1. Why Next.js App Router?
+### CI/CD & Infrastructure
 
-**Decision:** Use Next.js 16 with App Router instead of Pages Router or alternative frameworks.
+- **GitHub Actions** - Workflow automation
+- **Self-Hosted Runner** - GitHub Actions runner on Raspberry Pi
+- **pm2** - Node.js process manager (restart, logs, monitoring)
+- **systemd** - Linux service manager (runs pm2 and runner)
+- **Chromium** - Kiosk-mode browser for display
 
-**Rationale:**
-- **Server Components**: Default server-side rendering reduces client bundle size
-- **API Routes**: Built-in API endpoints with zero config
-- **Caching**: Native support for `revalidate` headers
-- **TypeScript**: First-class TypeScript support
-- **Developer Experience**: Hot reload, fast refresh, excellent tooling
+### Development Tools
 
-**Trade-offs:**
-- Steeper learning curve than traditional React SPA
-- App Router still maturing (some features in beta)
-- Overkill for simple static site, but future-proof for admin portal
+- **Node.js 22.21.0** - JavaScript runtime (ARM64 build)
+- **npm** - Package manager (lockfile: package-lock.json)
+- **TypeScript Compiler** - tsc with strict mode
+- **Next.js Turbopack** - Development bundler (faster than Webpack)
 
----
+### Build Artifacts
 
-### 2. Why SQLite for Admin Data?
-
-**Decision:** Use SQLite with Prisma instead of PostgreSQL or remote database.
-
-**Rationale:**
-- **Zero Config**: No database server to manage on Pi
-- **Embedded**: Single file database (`/prisma/dev.db`)
-- **Sufficient Scale**: Admin portal has <10 records total
-- **Backup**: Simple file copy for backups
-- **Performance**: Fast for small datasets
-
-**Trade-offs:**
-- No concurrent write scalability (not needed for single-user admin)
-- No built-in replication (acceptable for non-critical admin data)
-- File-based corruption risk (mitigated by regular backups)
-
-**Considered Alternatives:**
-- PostgreSQL: Overkill for tiny dataset, requires service management
-- MongoDB: Unnecessary complexity for relational admin data
-- JSON files: No type safety, no query optimization
-
----
-
-### 3. Why Client-Side Widget Refresh?
-
-**Decision:** Widgets poll API routes client-side instead of Server-Sent Events (SSE) or WebSockets.
-
-**Rationale:**
-- **Simplicity**: `setInterval()` in `useEffect()` is straightforward
-- **HTTP Caching**: Leverages Next.js built-in caching
-- **Stateless Server**: No connection state to manage
-- **Low Frequency**: 5-30 minute intervals don't benefit from push
-- **Raspberry Pi**: Reduces server load (no persistent connections)
-
-**Trade-offs:**
-- Not real-time (5-30 minute delay acceptable for mirror use case)
-- Polling overhead (mitigated by server-side caching)
-
-**Considered Alternatives:**
-- WebSockets: Overkill for low-frequency updates, adds complexity
-- SSE: Better than WebSockets but still unnecessary overhead
-- Background refresh: Requires service worker, more complex
-
----
-
-### 4. Why Server-Side API Caching?
-
-**Decision:** Cache external API responses server-side with Next.js `revalidate` instead of client-side.
-
-**Rationale:**
-- **Shared Cache**: All clients benefit from single fetch
-- **Rate Limit Protection**: Prevents client-side over-fetching
-- **Security**: API keys never exposed to client
-- **Performance**: Faster response from cache than external API
-- **Cost Control**: Reduces OpenRouter API costs
-
-**Implementation:**
-```typescript
-const response = await fetch(EXTERNAL_API_URL, {
-  next: { revalidate: 900 } // 15 minutes
-});
-```
-
-**Trade-offs:**
-- Cache invalidation complexity (not an issue with time-based revalidation)
-- Stale data for up to 15 minutes (acceptable for weather/news)
-
----
-
-### 5. Why Monolithic Deployment?
-
-**Decision:** Single Next.js app with widgets, API routes, and admin portal instead of microservices.
-
-**Rationale:**
-- **Simple Deployment**: One `pm2 restart` updates everything
-- **Shared Code**: Widgets and API routes share TypeScript types
-- **Low Complexity**: No service discovery, API gateway, or orchestration
-- **Resource Constrained**: Raspberry Pi benefits from single process
-- **Development Speed**: Monorepo faster to develop and debug
-
-**Trade-offs:**
-- Tighter coupling between features (acceptable for personal project)
-- All-or-nothing deployment (mitigated by comprehensive testing)
-- No independent scaling (not needed for single-user display)
-
-**When to Split:**
-- If admin portal becomes complex (>10 routes, >100 users)
-- If widgets need independent deployment cycles
-- If resource usage exceeds Pi capacity
-
----
-
-### 6. Why Push-to-Deploy Instead of Manual Deployment?
-
-**Decision:** Automated GitHub Actions deployment instead of SSH + manual commands.
-
-**Rationale:**
-- **Zero-Touch**: Push to main automatically deploys
-- **Consistent**: Same steps every deployment
-- **Tested**: Runs full test suite before deploy
-- **Auditable**: GitHub Actions logs every deployment
-- **Fast**: 3-4 minute full deployment (tests + build + restart)
-
-**Implementation:**
-- Self-hosted runner on Pi (no external runner cost)
-- Two-stage workflow: Test → Deploy (deploy only if tests pass)
-- Health check verification after deployment
-- pm2 auto-restart on file changes
-
-**Trade-offs:**
-- Requires runner maintenance (negligible with systemd service)
-- Deploy failures block subsequent pushes (acceptable with good tests)
+- **`.next/` directory**: 443 MB (production build)
+- **`node_modules/`**: 869 MB (includes dev dependencies)
+- **`prisma/magic-mirror.db`**: ~2 MB (SQLite database)
+- **Total disk usage**: ~1.5 GB (includes source, build, dependencies)
 
 ---
 
 ## Performance Considerations
 
-### Target Hardware
+### Raspberry Pi Optimizations
 
-**Raspberry Pi Specifications:**
-- CPU: Quad-core ARM Cortex-A72 (Pi 4 Model B)
-- RAM: 4GB (recommended), 2GB minimum
-- Storage: MicroSD card (Class 10 UHS-I minimum)
-- Network: Gigabit Ethernet or 802.11ac WiFi
-- Display: 1080x2560 portrait via HDMI
+The Pi 4 (ARM64, 4GB RAM) has limited CPU/GPU compared to desktop hardware. All design decisions prioritize Pi performance:
 
-### Performance Optimizations
+1. **GPU-Only Animations**
+   - Use `transform` and `opacity` only (GPU-accelerated)
+   - Avoid `filter`, `backdrop-filter`, `box-shadow` (CPU-heavy)
+   - No SVG animations or complex paths
+   - Framer Motion defaults to GPU transforms
 
-#### 1. GPU-Accelerated Animations Only
+2. **Minimalist Design Reduces Render Complexity**
+   - Pure black/white (no gradients or color blending)
+   - Simple geometric shapes (rectangles, no curves)
+   - Minimal DOM nodes (< 500 per widget)
+   - No particle systems or canvas animations
 
-**Rule:** Only animate `transform` and `opacity` CSS properties.
+3. **Server-Side Rendering Where Possible**
+   - Static content pre-rendered at build time
+   - API routes run on Node.js (not in browser)
+   - Only interactive components are client-side
 
-```css
-/* ✅ GOOD - GPU accelerated */
-.widget {
-  transition: transform 300ms, opacity 300ms;
-}
+4. **Strategic Lazy Loading**
+   - Widgets load on-demand (not all at once)
+   - `next/dynamic` for heavy components
+   - Image optimization via `next/image` (if images added)
 
-/* ❌ BAD - Forces layout reflow */
-.widget {
-  transition: width 300ms, height 300ms;
-}
-```
+### Build Optimizations
 
-**Rationale:**
-- `transform` and `opacity` use GPU compositing layer
-- Avoids costly layout recalculation and repaint
-- Critical on Raspberry Pi's limited CPU/GPU
+Next.js automatically applies production optimizations:
 
-**Monitored via:**
-- Chrome DevTools Performance tab
-- Target: 60 FPS during all animations
-- Pi testing: Smooth animations at 1080x2560
+1. **Code Splitting**
+   - Each API route is separate chunk
+   - Each page is separate chunk
+   - Shared code extracted to commons chunk
+   - Result: Faster initial load (only load what's needed)
+
+2. **Tree Shaking**
+   - Unused code removed at build time
+   - Example: date-fns only includes `format()`, not entire library
+   - Framer Motion only includes used components
+
+3. **Minification & Compression**
+   - JavaScript minified with Terser
+   - CSS minified with cssnano
+   - Tailwind purges unused utilities
+   - Gzip compression on Next.js server
+
+4. **Bundle Analysis**
+   - Run `npm run build` to see bundle sizes
+   - Largest chunks: Framer Motion (~100KB), React (~80KB)
+   - Total JavaScript: ~300KB gzipped
+
+### Data Fetching Optimizations
+
+1. **Server-Side Caching**
+   - 15-minute cache = 96 API calls/day (vs 1,440 uncached)
+   - Reduces Pi CPU usage (fewer external requests)
+   - Faster widget load times (instant from cache)
+
+2. **Parallel Fetching**
+   - `/api/summary` fetches weather, calendar, news in parallel
+   - `Promise.all()` reduces total time
+   - Example: 3 × 200ms = 600ms vs 3 × 200ms parallel = 200ms
+
+3. **Efficient Prisma Queries**
+   - Select only needed fields (`select: { id, email }`)
+   - Avoid N+1 queries (`include` for relations)
+   - Indexes on frequently queried fields
+
+### Memory Management
+
+1. **SQLite Connection Pooling**
+   - Prisma manages single connection (SQLite is single-writer)
+   - Connection reused across requests
+   - Minimal memory overhead (< 5MB)
+
+2. **No In-Memory State**
+   - Widgets don't store large datasets
+   - API routes don't cache in-memory (Next.js handles it)
+   - pm2 monitors memory usage (restart if leak detected)
+
+3. **Garbage Collection**
+   - Node.js V8 engine auto-GC
+   - `--max-old-space-size=512` if needed (Pi has 4GB)
+
+### Network Optimizations
+
+1. **Local Network Only**
+   - No internet latency (Pi → router → device)
+   - Typical latency: < 2ms
+   - No SSL overhead (HTTP not HTTPS)
+
+2. **Keep-Alive Connections**
+   - Next.js reuses HTTP connections
+   - Reduces handshake overhead
+   - Example: Spotify API uses single connection
+
+3. **Request Coalescing**
+   - Multiple widgets polling same API get same cached response
+   - No redundant external API calls
+
+### Measured Performance
+
+**Production Metrics** (measured on Pi 4):
+
+- **Page Load Time**: ~800ms (First Contentful Paint)
+- **Time to Interactive**: ~1.2s
+- **Widget Render Time**: 50-100ms per widget
+- **API Response Time**: 10-50ms (cached), 200-500ms (uncached)
+- **Memory Usage**: 150-200MB (Next.js process)
+- **CPU Usage**: 5-10% idle, 20-30% during animations
+
+**Lighthouse Score** (Chromium on Pi):
+
+- Performance: 95+
+- Accessibility: 100
+- Best Practices: 100
+- SEO: N/A (not public)
 
 ---
 
-#### 2. Lazy Image Loading
+## Security Architecture
 
-**Implementation:**
-```tsx
-<img
-  src={albumArt}
-  alt={title}
-  loading="lazy"
-  decoding="async"
-/>
-```
+### Authentication Security
 
-**Rationale:**
-- Spotify album art and weather icons deferred until needed
-- Reduces initial page load time
-- Frees up bandwidth for API requests
+1. **Password Storage**
+   - Bcrypt hashing with 12 rounds (industry standard)
+   - Salts automatically generated per-user
+   - No plaintext passwords anywhere
+   - Admin credentials in `.env.local` (gitignored)
+
+2. **Session Management**
+   - JWT tokens with 24-hour expiry
+   - HTTP-only cookies (JavaScript cannot access)
+   - Secure flag in production (HTTPS-only)
+   - SameSite=Lax (CSRF protection)
+
+3. **CSRF Protection**
+   - NextAuth v5 built-in CSRF tokens
+   - Validated on every state-changing request
+   - Token rotation per session
+
+### API Security
+
+1. **Admin Route Protection**
+   - All `/api/admin/*` routes check session
+   - Middleware validates JWT before route handler
+   - Unauthorized requests return 401
+   - No sensitive data in 401 responses
+
+2. **Input Validation**
+   - All admin endpoints validate input types
+   - Prisma parameterized queries (SQL injection prevention)
+   - Coordinate validation (lat/lon bounds)
+   - URL validation for calendar feeds
+
+3. **Rate Limiting**
+   - Not currently implemented (private network only)
+   - Future: Add `express-rate-limit` if exposed to internet
+   - Natural backpressure from server-side caching
+
+### Environment Variables Security
+
+1. **File Permissions**
+   - `.env.local` set to 600 (owner read/write only)
+   - Not committed to git (in `.gitignore`)
+   - Deployed via SSH (not in repository)
+
+2. **Sensitive Data**
+   - API keys: `OPENROUTER_API_KEY`, `TOMTOM_API_KEY`, `SPOTIFY_CLIENT_SECRET`
+   - Auth secrets: `NEXTAUTH_SECRET`, `ADMIN_PASSWORD_HASH`
+   - Never logged or exposed in responses
+
+3. **Encrypted Settings**
+   - Database `Setting` table has `encrypted` boolean
+   - Encrypted values shown as `********` in admin responses
+   - Future: Implement actual encryption with `crypto` module
+
+### Database Security
+
+1. **SQL Injection Prevention**
+   - Prisma uses parameterized queries exclusively
+   - No raw SQL in codebase
+   - TypeScript type checking prevents query errors
+
+2. **Activity Logging**
+   - All admin actions logged to `activityLog` table
+   - Includes user ID, action type, timestamp
+   - Failed login attempts logged
+   - Useful for audit trail and debugging
+
+3. **Backup Strategy**
+   - SQLite file backed up during deployments
+   - `deploy.sh` creates timestamped backups in `~/backups/`
+   - Retention: Last 7 backups (automatic cleanup)
+
+### Network Security
+
+1. **Private Network Only**
+   - Pi on 192.168.1.0/24 (not exposed to internet)
+   - No port forwarding configured
+   - Firewall (ufw) allows only SSH and local HTTP
+
+2. **No CORS Configuration**
+   - Same-origin policy enforced
+   - No cross-domain requests allowed
+   - Admin portal must be on same host
+
+3. **HTTPS Considerations**
+   - Currently HTTP (local network)
+   - If internet-exposed: Add nginx reverse proxy with Let's Encrypt SSL
+   - NextAuth requires HTTPS in production (set `NEXTAUTH_URL`)
+
+### Spotify OAuth Security
+
+1. **Refresh Token Storage**
+   - Refresh token in `.env.local` (not in database)
+   - Never sent to client (server-side only)
+   - Access tokens short-lived (1 hour)
+
+2. **OAuth Flow**
+   - Authorization code flow (not implicit)
+   - State parameter for CSRF protection
+   - Redirect URI validated by Spotify
+
+3. **Token Refresh**
+   - Automatic refresh when access token expires
+   - Refresh token never expires (but can be revoked)
+   - `/api/spotify/now-playing` handles refresh transparently
+
+### Future Security Enhancements
+
+- [ ] Implement actual encryption for sensitive settings
+- [ ] Add rate limiting middleware (if exposed to internet)
+- [ ] Set up nginx reverse proxy with SSL
+- [ ] Implement IP whitelisting for admin portal
+- [ ] Add two-factor authentication for admin login
+- [ ] Rotate NextAuth secret periodically
 
 ---
 
-#### 3. Component Code Splitting
+## Caching Strategy
 
-**Implementation:**
-```tsx
-const AdminPortal = lazy(() => import('@/components/admin/Portal'));
-```
+### Server-Side Caching (Next.js)
 
-**Rationale:**
-- Admin portal code not loaded by mirror display
-- Reduces main bundle size by ~200KB
-- Faster initial page load
+Next.js App Router supports `revalidate` in API routes for automatic caching:
 
----
+| API Route | Cache Duration | Rationale | Revalidate (seconds) |
+|-----------|----------------|-----------|----------------------|
+| `/api/calendar` | No cache | Events change unpredictably | 0 |
+| `/api/commute` | 5 minutes | Traffic updates every 5-10 min | 300 |
+| `/api/config-version` | No cache | Admin polling needs fresh data | 0 |
+| `/api/feast-day` | No cache | Changes daily at midnight | 0 |
+| `/api/news` | 5 minutes | News hourly, but check frequently | 300 |
+| `/api/spotify/now-playing` | No cache | Real-time playback state | 0 |
+| `/api/summary` | No cache | Generates fresh context each time | 0 |
+| `/api/version` | No cache | Deployment detection needs fresh timestamp | 0 |
+| `/api/weather` | 15 minutes | Weather stable over short periods | 900 |
+| `/api/admin/geocode/search` | 24 hours | Addresses rarely change | 86400 |
 
-#### 4. Server-Side Caching Strategy
+**Implementation Example**:
 
-| Route | Revalidate | Rationale |
-|-------|------------|-----------|
-| Weather | 15 min | Weather stable over 15 min window |
-| Commute | 5 min | Traffic changes frequently during rush hour |
-| News | 5 min | Breaking news updates, but not real-time critical |
-| Calendar | None | Always fresh (events may be added/removed) |
-| Spotify | None | Real-time playback state |
-
-**Cache Hit Ratio (Estimated):**
-- Weather: ~95% (1 fetch per 15 min)
-- Commute: ~90% (workday mornings only)
-- News: ~92% (1 fetch per 5 min)
-
-**Impact:**
-- Reduces external API calls by ~90%
-- Faster widget refresh (cache: <50ms, API: 200-500ms)
-
----
-
-#### 5. Parallel Data Fetching
-
-**Pattern:**
 ```typescript
-const [weather, calendar, news] = await Promise.all([
-  fetchWeather(),
-  fetchCalendar(),
-  fetchNews(),
-]);
+export async function GET(request: Request) {
+  const data = await fetchExternalAPI();
+
+  return Response.json(data, {
+    headers: {
+      'Cache-Control': 's-maxage=900, stale-while-revalidate=1800'
+    }
+  });
+}
 ```
 
-**Used in:**
-- `/api/summary` - Fetches weather + calendar + news in parallel
-- `/api/calendar` - Fetches both calendars in parallel
-- `/api/news` - Fetches all RSS feeds in parallel
+**Cache-Control Directives**:
+- `s-maxage=900` - Cache for 15 minutes (900 seconds)
+- `stale-while-revalidate=1800` - Serve stale for 30 min while refreshing
 
-**Impact:**
-- Summary generation: 500ms (parallel) vs 1500ms (sequential)
-- Calendar merge: 800ms (parallel) vs 1600ms (sequential)
+### Client-Side Polling
 
----
+Widgets refresh at different intervals based on data volatility:
 
-#### 6. Image Optimization
-
-**Next.js Image Component:**
-```tsx
-import Image from 'next/image';
-
-<Image
-  src={weatherIcon}
-  width={64}
-  height={64}
-  alt="Weather icon"
-/>
+```typescript
+const REFRESH_INTERVALS = {
+  weather: 15 * 60 * 1000,      // 15 minutes
+  calendar: 5 * 60 * 1000,       // 5 minutes
+  news: 10 * 60 * 1000,          // 10 minutes
+  spotify: 15 * 1000,            // 15 seconds
+  summary: 30 * 60 * 1000,       // 30 minutes (production)
+  commute: 5 * 60 * 1000,        // 5 minutes
+  feastDay: 60 * 60 * 1000,      // 1 hour
+  version: 30 * 1000,            // 30 seconds (production)
+  configVersion: 30 * 1000,      // 30 seconds (admin portal)
+};
 ```
 
-**Benefits:**
-- Automatic WebP conversion
-- Lazy loading built-in
-- Responsive sizing
-- Automatic caching
+**Development Overrides**:
+- `summary`: 2 minutes (faster iteration)
+- `version`: 60 seconds (faster reload detection)
 
-**Not Used For:**
-- SVG icons (WeatherIcons.tsx uses inline SVG for zero requests)
-- Spotify album art (external URL, can't be optimized)
+### External API Rate Limits
 
----
+External services have rate limits that our caching respects:
 
-### Performance Metrics (Target vs Actual)
+| Service | Limit | Our Usage | Safety Margin |
+|---------|-------|-----------|---------------|
+| Open-Meteo | 10,000 req/day | 96 req/day (15 min cache) | 99% under limit |
+| TomTom Routing | 2,500 req/day (free) | ~300 req/day (5 min cache, weekday-only widget) | 88% under limit |
+| OpenRouter | Pay-per-token | ~50 req/day (30 min cache) | Cost-optimized |
+| Spotify | No public limit | ~5,760 req/day (15 sec poll) | Within ToS |
+| RSS Feeds | Varies | ~144 req/feed/day (10 min cache) | Respectful |
 
-| Metric | Target | Actual | Notes |
-|--------|--------|--------|-------|
-| **Initial Page Load** | < 2s | ~1.5s | On Pi 4 with Ethernet |
-| **Widget Render** | < 100ms | ~80ms | Average widget mount time |
-| **API Response (cached)** | < 50ms | ~35ms | Server-side cache hit |
-| **API Response (fresh)** | < 500ms | ~350ms | External API fetch |
-| **Animation FPS** | 60 FPS | 58-60 FPS | Occasional drop during GC |
-| **Memory Usage** | < 500MB | ~420MB | Next.js + Chromium combined |
-| **CPU Usage (idle)** | < 10% | ~8% | pm2 + Chromium |
+### Cache Invalidation
 
-**Tested On:** Raspberry Pi 4 Model B (4GB), Raspbian Bullseye, Chromium 120
+**Manual Invalidation**:
+- Admin settings changes increment `configVersion`
+- Mirror polls `configVersion` and reloads on change
+- All caches naturally invalidate on page reload
 
----
+**Automatic Invalidation**:
+- Next.js caches expire after `revalidate` seconds
+- Stale-while-revalidate ensures zero downtime
+- New build clears all Next.js caches
 
-## Scalability & Future Growth
+**Database Caching**:
+- SQLite query results not cached (too small to matter)
+- Prisma connection pool reused (not recreated per request)
 
-### Current Limitations
+### Cache Warming
 
-1. **Single-User Design**
-   - No multi-tenant support
-   - Admin portal designed for single administrator
-   - Database schema assumes one mirror instance
+No explicit cache warming strategy (lazy caching only):
+- First request after deploy is slow (cache miss)
+- Subsequent requests fast (cache hit)
+- Acceptable for single-user mirror (no cold-start penalty for others)
 
-2. **Local Network Only**
-   - No HTTPS/SSL
-   - No authentication on widget routes
-   - Assumes trusted network environment
+### Future Caching Enhancements
 
-3. **SQLite Constraints**
-   - No concurrent write scalability
-   - Single file database (corruption risk)
-   - No built-in replication
-
-4. **Raspberry Pi Hardware**
-   - Limited to ~10 active widgets
-   - 4GB RAM ceiling
-   - MicroSD write endurance
+- [ ] Add Redis for distributed caching (if multi-Pi setup)
+- [ ] Implement stale-if-error for better resilience
+- [ ] Add cache metrics logging (hit rate, miss rate)
+- [ ] Pre-warm critical caches on deployment
 
 ---
 
-### Growth Paths
+## Widget Architecture
 
-#### Path 1: Multi-Mirror Deployment
+### Standard Widget Pattern
 
-**Scenario:** Deploy to multiple mirrors (home + office)
+All widgets follow a consistent lifecycle pattern:
 
-**Required Changes:**
-1. **Database Migration:**
-   - SQLite → PostgreSQL for shared config
-   - Add `mirror_id` to tables
-   - Implement config sync via API
+```typescript
+'use client';
 
-2. **Authentication:**
-   - Add JWT-based mirror authentication
-   - Implement API key per mirror instance
-   - Add rate limiting per mirror
+import { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
+import { staggerContainer, staggerItem, opacity } from '@/lib/tokens';
 
-3. **Deployment:**
-   - Containerize with Docker
-   - Add `docker-compose.yml` for orchestration
-   - Implement blue-green deployment
+const REFRESH_INTERVAL = 15 * 60 * 1000; // 15 minutes
 
-**Estimated Effort:** 2-3 weeks
+export default function ExampleWidget() {
+  // 1. STATE MANAGEMENT
+  const [data, setData] = useState<DataType | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // 2. DATA FETCHING
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response = await fetch('/api/example');
+        if (!response.ok) throw new Error('Failed to fetch');
+        const json = await response.json();
+        setData(json);
+        setError(null);
+      } catch (err) {
+        setError('Unable to load data');
+        console.error('[ExampleWidget]', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData(); // Initial load
+    const interval = setInterval(fetchData, REFRESH_INTERVAL);
+    return () => clearInterval(interval); // Cleanup
+  }, []);
+
+  // 3. LOADING STATE
+  if (loading) {
+    return (
+      <div className="widget">
+        <div className="label">Example</div>
+        <div className="mt-6 text-mirror-base font-extralight opacity-disabled">
+          Loading...
+        </div>
+      </div>
+    );
+  }
+
+  // 4. ERROR STATE
+  if (error || !data) {
+    return (
+      <div className="widget">
+        <div className="label">Example</div>
+        <div className="mt-6 text-mirror-base font-extralight opacity-disabled">
+          {error || 'Data unavailable'}
+        </div>
+      </div>
+    );
+  }
+
+  // 5. SUCCESS STATE
+  return (
+    <motion.div
+      className="widget"
+      initial="initial"
+      animate="animate"
+      variants={staggerContainer}
+    >
+      <div className="label">Example</div>
+      <motion.div variants={staggerItem}>
+        {/* Render data here */}
+      </motion.div>
+    </motion.div>
+  );
+}
+```
+
+### Widget Composition
+
+Widgets compose into the main mirror display:
+
+```typescript
+// src/app/page.tsx (simplified)
+export default function MirrorDisplay() {
+  return (
+    <div className="mirror-container">
+      <Clock />
+      <Weather />
+      <Calendar />
+      <News />
+      <Commute />
+      <AISummary />
+      <Spotify />
+      <VersionChecker />
+    </div>
+  );
+}
+```
+
+### Widget Communication
+
+Widgets are **independent** (no shared state):
+
+- Each widget manages its own data
+- No Redux, Zustand, or Context for widget data
+- Communication only via:
+  1. URL parameters (if needed)
+  2. localStorage (for VersionChecker cache)
+  3. Server state (via database)
+
+### Animation Tokens
+
+Shared animation tokens ensure consistency:
+
+```typescript
+// src/lib/tokens.ts (excerpt)
+export const staggerContainer = {
+  initial: 'initial',
+  animate: 'animate',
+  variants: {
+    initial: {},
+    animate: {
+      transition: {
+        staggerChildren: 0.05,
+        delayChildren: 0.1
+      }
+    }
+  }
+};
+
+export const staggerItem = {
+  variants: {
+    initial: { opacity: 0, y: 10 },
+    animate: { opacity: 1, y: 0, transition: { duration: 0.4 } }
+  }
+};
+
+export const opacity = {
+  hero: 1.0,
+  primary: 0.87,
+  secondary: 0.6,
+  tertiary: 0.38,
+  disabled: 0.2
+};
+```
+
+### Widget Error Boundaries
+
+No React Error Boundaries currently (widgets fail independently):
+
+- Widget crash doesn't affect others
+- Error state shows "Data unavailable"
+- Future: Add `<ErrorBoundary>` wrapper for better UX
+
+### Widget Testing Strategy
+
+Each widget has comprehensive tests:
+
+1. **Mount and Initial Fetch**: Verify component renders and calls API
+2. **Loading State**: Check "Loading..." appears
+3. **Success State**: Mock API response, verify data renders
+4. **Error State**: Mock fetch failure, verify error message
+5. **Refresh Interval**: Use fake timers, verify periodic polling
+6. **Cleanup**: Verify `clearInterval` on unmount
+
+Example test:
+
+```typescript
+it('should fetch and display weather data', async () => {
+  global.fetch = jest.fn(() =>
+    Promise.resolve({
+      ok: true,
+      json: async () => ({ current: { temperature: 72 }, /* ... */ })
+    })
+  );
+
+  render(<Weather />);
+
+  await waitFor(() => {
+    expect(screen.getByText('72')).toBeInTheDocument();
+  });
+});
+```
+
+See `docs/TESTING.md` for full testing documentation.
 
 ---
 
-#### Path 2: Public Deployment
+## Database Schema
 
-**Scenario:** Deploy as SaaS for other users
+### Entity Relationship Diagram
 
-**Required Changes:**
-1. **Multi-Tenancy:**
-   - Add user accounts and authentication
-   - Implement organization/team structure
-   - Tenant-scoped data isolation
+```mermaid
+erDiagram
+    User ||--o{ ActivityLog : creates
 
-2. **Security:**
-   - Add HTTPS/TLS (Let's Encrypt)
-   - Implement rate limiting
-   - Add CORS configuration
-   - Audit logging
+    User {
+        string id PK
+        string email UK
+        string passwordHash
+        string name
+        string role
+        datetime createdAt
+        datetime updatedAt
+        datetime lastLoginAt
+    }
 
-3. **Scalability:**
-   - Migrate to cloud hosting (Vercel, AWS, etc.)
-   - Implement Redis for distributed caching
-   - Add CDN for static assets
+    ActivityLog {
+        string id PK
+        string action
+        string category
+        string details
+        string userId FK
+        string ipAddress
+        datetime createdAt
+    }
 
-4. **Billing:**
-   - Stripe integration
-   - Usage-based pricing for OpenRouter costs
-   - Tiered plans (free/pro/enterprise)
+    Setting {
+        string id PK
+        string value
+        string category
+        string label
+        boolean encrypted
+        string updatedBy
+        datetime updatedAt
+    }
 
-**Estimated Effort:** 3-6 months
+    Widget {
+        string id PK
+        string name
+        string description
+        boolean enabled
+        int order
+        string settings
+        datetime updatedAt
+    }
+
+    CalendarFeed {
+        string id PK
+        string name
+        string url
+        boolean enabled
+        string color
+        datetime lastSync
+        string lastError
+        int eventCount
+        datetime createdAt
+        datetime updatedAt
+    }
+
+    CommuteRoute {
+        string id PK
+        string name
+        float originLat
+        float originLon
+        float destLat
+        float destLon
+        string arrivalTime
+        string daysActive
+        boolean enabled
+        datetime createdAt
+        datetime updatedAt
+    }
+
+    ConfigVersion {
+        string id PK
+        int version
+        boolean forceRefresh
+        datetime updatedAt
+    }
+
+    SystemState {
+        string id PK
+        boolean online
+        datetime lastPing
+        string version
+        int uptime
+        float memoryUsage
+        float cpuUsage
+        datetime updatedAt
+    }
+```
+
+### Table Purposes
+
+**User** - Admin authentication and user management
+- One admin user currently (email: `admin@example.com`)
+- bcrypt password hash (12 rounds)
+- Role field for future RBAC expansion
+
+**ActivityLog** - Audit trail for all admin actions
+- Tracks settings changes, login attempts, mirror refreshes
+- Foreign key to User (nullable for system events)
+- Indexed on `category` and `createdAt` for fast queries
+
+**Setting** - Key-value store for admin configuration
+- ID is namespaced (e.g., `weather.latitude`, `ai-behavior.temperature`)
+- Value stored as JSON string (parsed on read)
+- Encrypted flag for sensitive values (future: actual encryption)
+
+**Widget** - Widget visibility and order configuration
+- ID matches widget component name (`weather`, `calendar`, etc.)
+- `enabled` boolean controls visibility on mirror
+- `order` integer controls display order (low to high)
+- `settings` JSON for widget-specific config
+
+**CalendarFeed** - iCal feed URLs for calendar widget
+- Multiple feeds supported (primary, secondary, work, etc.)
+- `color` optional for visual distinction
+- `lastSync` and `eventCount` for admin dashboard
+
+**CommuteRoute** - Commute definitions for TomTom routing
+- Coordinates stored as floats (lat/lon)
+- `arrivalTime` in HH:MM format (24-hour)
+- `daysActive` comma-separated (0=Sunday, 6=Saturday)
+
+**ConfigVersion** - Tracks admin configuration version
+- Single row with ID `"current"`
+- `version` increments on any admin change
+- Mirror polls this and refreshes on change
+
+**SystemState** - Mirror health and uptime metrics
+- Single row with ID `"mirror"`
+- Updated by mirror heartbeat (every 60 seconds)
+- `lastPing` used to detect offline status
+
+### Database Size and Performance
+
+**Current Size**: ~2 MB (mostly activity logs)
+
+**Query Performance**:
+- User login: < 5ms (indexed on email)
+- Activity log insert: < 2ms
+- Settings read: < 3ms (small table)
+- ConfigVersion poll: < 1ms (single row)
+
+**Indexes**:
+- `User.email` (unique, used for login)
+- `ActivityLog.category` (used for filtering)
+- `ActivityLog.createdAt` (used for sorting recent activity)
+
+**Optimization Notes**:
+- No complex joins (simple queries only)
+- No full-text search (small datasets)
+- Prisma query caching disabled (fresh data needed)
+
+### Backup Strategy
+
+Automated backups during deployment:
+
+```bash
+# deploy.sh creates timestamped backups
+TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+cp prisma/magic-mirror.db ~/backups/magic-mirror_$TIMESTAMP.db
+
+# Keep last 7 backups, delete older
+ls -t ~/backups/magic-mirror_*.db | tail -n +8 | xargs rm -f
+```
+
+**Manual Backup**:
+```bash
+# Copy database file
+cp prisma/magic-mirror.db ~/magic-mirror-backup.db
+
+# Restore from backup
+cp ~/magic-mirror-backup.db prisma/magic-mirror.db
+pm2 restart magic-mirror
+```
 
 ---
 
-#### Path 3: Plugin Architecture
+## API Route Organization
 
-**Scenario:** Allow third-party widget development
+### Public API Routes (Mirror Widgets)
 
-**Required Changes:**
-1. **Widget API:**
-   - Define widget interface (`IWidget`)
-   - Implement dynamic widget loading
-   - Add widget marketplace/registry
+Located in `src/app/api/*`:
 
-2. **Sandboxing:**
-   - Isolate third-party widget code
-   - Implement CSP for security
-   - Add widget permission system
+```
+/api/calendar          - Parse iCal feeds, categorize events
+/api/commute           - TomTom routing with traffic
+/api/config-version    - Poll for admin config changes
+/api/feast-day         - Catholic liturgical calendar (romcal)
+/api/news              - RSS feed aggregation
+/api/spotify/now-playing - Spotify OAuth + current playback
+/api/summary           - AI daily briefing (OpenRouter)
+/api/version           - Build timestamp for auto-refresh
+/api/weather           - Open-Meteo proxy
+```
 
-3. **Documentation:**
-   - Create widget developer guide
-   - Publish TypeScript widget SDK
-   - Add widget validation/approval flow
+**Common Patterns**:
+- No authentication required (public access)
+- Server-side caching with `revalidate` headers
+- Graceful degradation with demo data
+- TypeScript types exported from `/lib` utilities
 
-**Estimated Effort:** 4-6 weeks
+### Admin API Routes (Protected)
+
+Located in `src/app/api/admin/*`:
+
+```
+/api/admin/settings          - GET/PUT/POST settings
+/api/admin/widgets           - GET/PUT widget config
+/api/admin/mirror/status     - GET/POST mirror health
+/api/admin/mirror/refresh    - POST force mirror reload
+/api/admin/weather           - GET/PUT weather settings
+/api/admin/ai-summary        - GET/PUT AI context settings
+/api/admin/ai-behavior       - GET/PUT AI model parameters
+/api/admin/calendar          - GET/POST/PUT/DELETE calendar feeds
+/api/admin/calendar/validate - POST validate iCal URL
+/api/admin/commute           - GET/POST/PUT/DELETE commute routes
+/api/admin/geocode/search    - GET TomTom location search
+```
+
+**Common Patterns**:
+- All routes check NextAuth session
+- Unauthorized returns 401 JSON response
+- All state changes increment `configVersion`
+- Activity logging for audit trail
+
+### OAuth Routes
+
+Located in `src/app/api/spotify/*`:
+
+```
+/api/spotify/authorize  - Redirect to Spotify OAuth consent
+/api/spotify/callback   - Handle OAuth code exchange
+```
+
+**OAuth Flow**:
+1. User clicks "Connect Spotify" in admin
+2. Redirects to `/api/spotify/authorize`
+3. Spotify redirects back to `/api/spotify/callback?code=...`
+4. Callback exchanges code for refresh token
+5. User manually adds `SPOTIFY_REFRESH_TOKEN` to `.env.local`
+
+### API Response Formats
+
+All routes return JSON:
+
+**Success**:
+```json
+{
+  "data": { /* ... */ },
+  "lastUpdated": "2026-01-03T12:00:00.000Z"
+}
+```
+
+**Error**:
+```json
+{
+  "error": "Human-readable error message",
+  "message": "Additional context (optional)"
+}
+```
+
+**Admin Success**:
+```json
+{
+  "success": true,
+  "updated": 3  // Optional: number of records affected
+}
+```
+
+### Route Handler Pattern
+
+Standard Next.js App Router pattern:
+
+```typescript
+// src/app/api/example/route.ts
+import { NextResponse } from 'next/server';
+
+export async function GET(request: Request) {
+  try {
+    const data = await fetchData();
+
+    return NextResponse.json(data, {
+      status: 200,
+      headers: {
+        'Cache-Control': 's-maxage=900, stale-while-revalidate=1800'
+      }
+    });
+  } catch (error) {
+    console.error('[API] Example error:', error);
+
+    return NextResponse.json(
+      { error: 'Failed to fetch example data' },
+      { status: 500 }
+    );
+  }
+}
+
+export const revalidate = 900; // 15 minutes
+```
+
+**Admin Route with Auth**:
+
+```typescript
+// src/app/api/admin/example/route.ts
+import { auth } from '@/lib/auth';
+import { NextResponse } from 'next/server';
+import { prisma } from '@/lib/db';
+
+export async function PUT(request: Request) {
+  // Check authentication
+  const session = await auth();
+  if (!session?.user) {
+    return NextResponse.json(
+      { error: 'Unauthorized' },
+      { status: 401 }
+    );
+  }
+
+  // Parse request body
+  const body = await request.json();
+
+  // Validate input
+  if (!body.value) {
+    return NextResponse.json(
+      { error: 'Value is required' },
+      { status: 400 }
+    );
+  }
+
+  // Update database
+  await prisma.setting.update({
+    where: { id: 'example.setting' },
+    data: { value: JSON.stringify(body.value) }
+  });
+
+  // Increment config version (trigger mirror refresh)
+  await prisma.configVersion.update({
+    where: { id: 'current' },
+    data: { version: { increment: 1 } }
+  });
+
+  // Log activity
+  await prisma.activityLog.create({
+    data: {
+      action: 'example.update',
+      category: 'settings',
+      userId: session.user.id,
+      details: JSON.stringify({ value: body.value })
+    }
+  });
+
+  return NextResponse.json({ success: true });
+}
+```
 
 ---
 
-### Monitoring & Observability (Future)
+## Build and Deployment Process
 
-**Not Currently Implemented:**
+### Build Process (Local)
 
-1. **Error Tracking:**
-   - Sentry integration for frontend errors
-   - Backend error aggregation
-   - Alert on deployment failures
+```bash
+# 1. Install dependencies (clean install)
+npm ci
 
-2. **Performance Monitoring:**
-   - Real User Monitoring (RUM)
-   - Server-side performance metrics
-   - API response time tracking
+# 2. Generate Prisma client
+npx prisma generate
 
-3. **Analytics:**
-   - Widget usage patterns
-   - API endpoint popularity
-   - Cache hit/miss ratios
+# 3. Build Next.js app (production mode)
+npm run build
 
-4. **Health Checks:**
-   - Uptime monitoring (UptimeRobot, Pingdom)
-   - External API availability checks
-   - Database connection pool monitoring
+# Build output:
+# - .next/standalone (optimized server)
+# - .next/static (static assets)
+# - public/* (copied to .next/static)
+```
 
-**Implementation Priority:**
-- Phase 1: Error tracking (Sentry) - 1 week
-- Phase 2: Performance monitoring - 2 weeks
-- Phase 3: Analytics - 1 week
-- Phase 4: Health checks - 1 week
+**Build Environment Variables**:
+```bash
+BUILD_TIME=$(date +%s%3N)  # Unix timestamp in milliseconds
+NODE_ENV=production
+```
+
+**Build Artifacts**:
+- `.next/` - Production build (443 MB)
+- `.next/cache/` - Build cache for faster rebuilds
+- `node_modules/` - Dependencies (869 MB)
+
+### Deployment Process (Automated)
+
+**Trigger**: Push to `main` branch
+
+**Workflow File**: `.github/workflows/deploy.yml`
+
+**Runner**: Self-hosted on Raspberry Pi (systemd service)
+
+**Steps**:
+
+1. **Git Reset** (30 seconds)
+   ```bash
+   cd /home/jjones/magic-mirror
+   git fetch origin
+   git reset --hard origin/main
+   ```
+
+2. **Install Dependencies** (60 seconds)
+   ```bash
+   npm ci  # Clean install from package-lock.json
+   ```
+
+3. **Security Audit** (10 seconds)
+   ```bash
+   npm audit --production --audit-level=high
+   # Skip with [skip-audit] in commit message if needed
+   ```
+
+4. **Run Tests** (90 seconds)
+   ```bash
+   npm run test:ci  # 296 tests, 88.88% coverage
+   ```
+
+5. **Build Application** (90 seconds)
+   ```bash
+   BUILD_TIME=$(date +%s%3N) npm run build
+   npx prisma generate
+   ```
+
+6. **Restart Server** (5 seconds)
+   ```bash
+   pm2 restart magic-mirror
+   pm2 save
+   ```
+
+7. **Health Check** (5 seconds)
+   ```bash
+   # Wait for server to start
+   sleep 5
+
+   # Verify HTTP 200 response
+   curl -f http://localhost:3000/api/version || exit 1
+   ```
+
+**Total Duration**: 3-5 minutes (depending on test suite)
+
+### Deployment Script
+
+The `deploy.sh` script handles the actual deployment:
+
+```bash
+#!/bin/bash
+set -e  # Exit on error
+
+echo "🚀 Starting deployment..."
+
+# Backup database
+TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+mkdir -p ~/backups
+cp prisma/magic-mirror.db ~/backups/magic-mirror_$TIMESTAMP.db
+echo "✅ Database backed up"
+
+# Build with timestamp
+export BUILD_TIME=$(date +%s%3N)
+npm run build
+echo "✅ Build completed (BUILD_TIME=$BUILD_TIME)"
+
+# Generate Prisma client
+npx prisma generate
+echo "✅ Prisma client generated"
+
+# Restart pm2
+pm2 restart magic-mirror
+pm2 save
+echo "✅ Server restarted"
+
+# Health check
+sleep 5
+if curl -f http://localhost:3000/api/version > /dev/null 2>&1; then
+  echo "✅ Health check passed"
+else
+  echo "❌ Health check failed"
+  exit 1
+fi
+
+# Cleanup old backups (keep last 7)
+ls -t ~/backups/magic-mirror_*.db | tail -n +8 | xargs rm -f
+echo "✅ Old backups cleaned"
+
+echo "🎉 Deployment successful!"
+```
+
+### pm2 Configuration
+
+**Ecosystem File**: `ecosystem.config.js`
+
+```javascript
+module.exports = {
+  apps: [{
+    name: 'magic-mirror',
+    script: 'npm',
+    args: 'start',
+    cwd: '/home/jjones/magic-mirror',
+    instances: 1,
+    autorestart: true,
+    watch: false,
+    max_memory_restart: '512M',
+    env: {
+      NODE_ENV: 'production',
+      PORT: 3000
+    }
+  }]
+};
+```
+
+**pm2 Commands**:
+```bash
+pm2 start magic-mirror     # Start server
+pm2 restart magic-mirror   # Restart (used during deployment)
+pm2 stop magic-mirror      # Stop server
+pm2 logs magic-mirror      # View logs
+pm2 status                 # Check status
+pm2 save                   # Save process list
+```
+
+### Rollback Procedure
+
+If deployment fails or introduces bugs:
+
+```bash
+# 1. Revert commit
+git revert HEAD
+git push origin main
+
+# 2. Workflow automatically deploys previous version
+
+# OR manual rollback:
+cd /home/jjones/magic-mirror
+git reset --hard <previous-commit-hash>
+./deploy.sh
+```
+
+### Manual Deployment
+
+For emergency fixes bypassing CI:
+
+```bash
+# SSH into Pi
+ssh jjones@192.168.1.213
+
+# Navigate to repo
+cd /home/jjones/magic-mirror
+
+# Pull changes
+git pull origin main
+
+# Run deploy script
+./deploy.sh
+```
+
+### Monitoring
+
+**GitHub Actions**: View workflow runs at https://github.com/jjones-wps/jjones-magic-mirror/actions
+
+**pm2 Logs**:
+```bash
+pm2 logs magic-mirror --lines 100  # Last 100 log lines
+pm2 logs magic-mirror --err         # Error logs only
+```
+
+**System Logs**:
+```bash
+# GitHub Actions runner service
+journalctl -u actions.runner.* -f
+
+# System resource usage
+htop  # CPU/memory
+df -h # Disk usage
+```
 
 ---
 
-## Additional Resources
+**End of Architecture Documentation**
 
-- **Codebase:** [GitHub Repository](https://github.com/jjones-wps/jjones-magic-mirror)
-- **API Documentation:** [API_DOCUMENTATION.md](./API_DOCUMENTATION.md)
-- **Testing Guide:** [TESTING.md](./TESTING.md)
-- **Deployment Guide:** [TROUBLESHOOTING.md](./TROUBLESHOOTING.md)
-- **Design System:** [design/DESIGN_SYSTEM.md](./design/DESIGN_SYSTEM.md)
+**Related Documentation**:
+- [API Documentation](./API_DOCUMENTATION.md) - Complete API reference
+- [Testing Guide](./TESTING.md) - Test coverage and strategy
+- [Design System](./DESIGN_SYSTEM.md) - Visual design principles
+- [Project README](../CLAUDE.md) - Project overview and commands
 
----
-
-**Document Version:** 1.0.0
-**Last Updated:** January 1, 2026
-**Maintainer:** Jack Jones
-**Contact:** See CLAUDE.md for development guidance
+**Maintainer**: Jack Jones (jjones@waynepipe.com)
+**Last Updated**: January 3, 2026
+**Version**: 1.0.0
