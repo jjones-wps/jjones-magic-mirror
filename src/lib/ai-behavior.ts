@@ -3,7 +3,7 @@
  * Shared between admin API and summary generation
  */
 
-import { prisma } from '@/lib/prisma';
+import { prisma } from '@/lib/db';
 
 export interface AIBehaviorSettings {
   // Model & Output Parameters
