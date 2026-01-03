@@ -59,6 +59,67 @@ jest.mock('@/lib/db', () => ({
 
 ---
 
+### ✅ Build Failure - Client Component Importing Prisma Code
+
+**Issue:** After test fix, build failed with:
+
+```
+Error: Turbopack build failed with 3 errors:
+./node_modules/better-sqlite3/lib/database.js:2:12
+Module not found: Can't resolve 'fs'
+
+Import trace:
+  Client Component Browser:
+    ./src/lib/db.ts [Client Component Browser]
+    ./src/lib/ai-behavior.ts [Client Component Browser]
+    ./src/app/admin/ai-behavior/page.tsx [Client Component Browser]
+```
+
+**Root Cause:**
+
+- Admin page (`src/app/admin/ai-behavior/page.tsx`) is a client component with `'use client'` directive
+- Client components cannot import server-only code (Prisma, Node.js modules)
+- After extracting `fetchAIBehaviorSettings()` to shared `ai-behavior.ts`, it included `import { prisma }` at the top
+- Next.js attempted to bundle Prisma + better-sqlite3 (native Node.js module) into browser bundle
+- better-sqlite3 requires Node.js `fs` module → build fails
+
+**Solution:**
+Split into client-safe and server-only modules with proper Next.js directives:
+
+```typescript
+// src/lib/ai-behavior.ts (CLIENT-SAFE)
+// - Types and constants only
+// - No Prisma imports
+// - Can be imported by client components
+
+export interface AIBehaviorSettings {
+  /* ... */
+}
+export const DEFAULT_AI_BEHAVIOR = {
+  /* ... */
+};
+
+// src/lib/ai-behavior.server.ts (SERVER-ONLY - NEW FILE)
+import 'server-only'; // Next.js directive prevents client import
+import { prisma } from '@/lib/db';
+import { DEFAULT_AI_BEHAVIOR, type AIBehaviorSettings } from './ai-behavior';
+
+export async function fetchAIBehaviorSettings(): Promise<AIBehaviorSettings> {
+  // Database operations with Prisma
+}
+```
+
+**Files Modified:**
+
+- `src/lib/ai-behavior.ts` - Removed Prisma import and `fetchAIBehaviorSettings()`
+- `src/lib/ai-behavior.server.ts` - **NEW** server-only module with `'server-only'` directive
+- `src/app/api/admin/ai-behavior/route.ts` - Changed import to `.server` module
+- `src/app/api/summary/route.ts` - Changed import to `.server` module
+
+**Result:** Build succeeded, deployment to Pi completed successfully (4m 7s)
+
+---
+
 ## Priority Matrix (Optional Enhancements)
 
 | Priority  | Item                                      | Effort | Impact | Risk   |
