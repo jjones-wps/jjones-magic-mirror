@@ -13,7 +13,44 @@ npm run dev      # Start development server (http://localhost:3000)
 npm run build    # Production build
 npm run start    # Start production server
 npm run lint     # Run ESLint
+npm run format   # Format all files with Prettier
 ```
+
+## Code Quality Gates
+
+This project uses **synergistic** pre-commit hooks and CI checks to maximize quality without redundancy:
+
+### Pre-Commit Hooks (Local, <10 seconds)
+
+- **Tool:** Husky + lint-staged
+- **Runs:** Automatically on `git commit`
+- **Scope:** Staged files only
+- **Actions:**
+  - ESLint --fix (auto-fix linting issues)
+  - Prettier --write (auto-format code)
+
+### CI Pipeline (Remote, 3-5 minutes)
+
+- **Tool:** GitHub Actions (self-hosted runner on Pi)
+- **Runs:** On push to main
+- **Scope:** Full codebase
+- **Actions:**
+  - Full test suite (296 tests, 88.88% coverage)
+  - Production build verification
+  - Deployment to Pi
+
+### Why This Design?
+
+**Pre-commit** catches formatting/linting errors instantly (fast developer feedback).
+**CI** verifies full system integrity and deployment readiness.
+**No redundancy:** Pre-commit doesn't run tests (too slow, duplicates CI).
+
+This means:
+
+- ✅ Developers get instant feedback on style/syntax issues
+- ✅ CI still runs comprehensive checks before deployment
+- ✅ No waiting 3-5 minutes for tests on every commit
+- ✅ Production deploys are always fully tested
 
 ## Raspberry Pi Production Setup
 
@@ -276,10 +313,12 @@ The `VersionChecker` component (`src/components/VersionChecker.tsx`) provides au
 **Test Framework**: Jest 30 + React Testing Library
 
 **Coverage**: 88.88% (core features: 95-100%)
+
 - 296 passing tests across 23 test suites
 - Excludes admin portal (0% coverage, incomplete features)
 
 **Running Tests**:
+
 ```bash
 npm test                    # Run all tests
 npm run test:coverage       # With coverage report
@@ -300,6 +339,7 @@ The project has a robust CI/CD pipeline, but certain issues can occur. See `docs
 6. **Prisma client generation** (postinstall hook required)
 
 **Quick Fix Reference**:
+
 - Test locale errors → Use `toLocaleDateString('en-US')`
 - Jest import errors → Add `.js` extension to ES module imports
 - TypeScript errors → Add `// @ts-nocheck` to incomplete features
@@ -312,12 +352,14 @@ The project has a robust CI/CD pipeline, but certain issues can occur. See `docs
 **Primary Achievement**: Completed migration from Playwright to Chrome DevTools MCP for browser automation and debugging.
 
 **Chrome DevTools Integration**:
+
 - ✅ Verified WSL2 → Windows port proxy configuration working
 - ✅ Tested all capabilities: navigation, snapshots, console monitoring, network analysis, screenshots
 - ✅ Successfully automated testing on GitHub.com and Magic Mirror app
 - ✅ Removed all Playwright references from documentation and configs
 
 **WSL2 Troubleshooting Documentation**:
+
 - Created comprehensive 350+ line Chrome DevTools section in global CLAUDE.md (`~/.claude/CLAUDE.md:249-601`)
 - Documented architecture: `WSL2 localhost → Windows port proxy → Chrome DevTools`
 - Added 6-step diagnostic checklist for connection issues
@@ -325,24 +367,28 @@ The project has a robust CI/CD pipeline, but certain issues can occur. See `docs
 - Captured network topology notes for bridged WSL2 setup
 
 **Key Technical Insights**:
+
 - WSL2 bridged networking requires localhost (not IP addresses) for Chrome connection
 - Port proxy forwards `0.0.0.0:9222` → `127.0.0.1:9222` on Windows
 - Chrome must bind to `127.0.0.1:9222` with `--remote-debugging-address=127.0.0.1`
 - MCP config uses `http://localhost:9222/json` (WSL2 localhost forwarding handles the rest)
 
 **Performance Optimization Discovered via Chrome DevTools**:
+
 - Network analysis revealed 201 requests since page load
 - Spotify widget was polling every 10 seconds (6 calls/minute)
 - Optimized to 15 seconds (4 calls/minute) - 33% reduction
 - Better Raspberry Pi performance with no perceptible UX impact
 
 **Files Modified**:
+
 - `~/.claude/CLAUDE.md` - Complete chrome-devtools section rewrite (lines 249-601)
 - `~/.claude/CLAUDE.md` - Updated MCP Tool Selection Guide (removed Playwright)
 - `~/.claude/CLAUDE.md` - Updated "Combining MCP Tools" workflows
 - `src/components/widgets/Spotify.tsx` - Polling interval optimization
 
 **Testing Performed**:
+
 - Chrome DevTools on GitHub.com (8 capabilities verified)
 - Chrome DevTools on Magic Mirror (all widgets functional, no console errors)
 - Network analysis: 16 API calls, all 200 OK
@@ -365,6 +411,7 @@ Successfully resolved 7 sequential build/test failures in CI/CD pipeline:
 **Final Result**: 296 tests passing, 88.88% coverage, deployment in 3m40s
 
 **Files Modified**:
+
 - `jest.config.ts` - ES module import, coverage config
 - `src/lib/news.ts` - Locale-specific date formatting
 - `src/lib/auth/config.server.ts` - next-auth v5 module path
@@ -375,16 +422,19 @@ Successfully resolved 7 sequential build/test failures in CI/CD pipeline:
 ### December 31, 2024 - Features & Testing
 
 **Features Added**:
+
 - Catholic feast day display (romcal integration)
 - AI summary time-aware greetings
 - TomTom commute widget
 
 **Testing Achievements**:
+
 - Added 70 new tests (commute, news, version checker)
 - Achieved 95-100% coverage for all core features
 - Created comprehensive test suite (296 tests total)
 
 **Files Modified**:
+
 - `.github/workflows/deploy.yml` - NEW push-to-deploy workflow
 - `deploy.sh` - NEW versioned deploy script
 - `src/lib/commute.ts` - NEW TomTom API utilities

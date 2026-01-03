@@ -21,7 +21,7 @@ A smart magic mirror display built with Next.js, designed for a 1080x2560 portra
 
 ![Magic Mirror full display showing all widgets in portrait mode](public/screenshots/full-mirror-display.png)
 
-*Full 1080x2560 portrait display showing all widgets in action*
+_Full 1080x2560 portrait display showing all widgets in action_
 
 ### Feature Highlights
 
@@ -32,7 +32,7 @@ A smart magic mirror display built with Next.js, designed for a 1080x2560 portra
 **Clock Widget**
 ![Clock widget with time, date, and feast day](public/screenshots/clock-widget.png)
 
-*Animated digit transitions with "Waterfall of Time" effect*
+_Animated digit transitions with "Waterfall of Time" effect_
 
 </td>
 <td width="33%">
@@ -40,7 +40,7 @@ A smart magic mirror display built with Next.js, designed for a 1080x2560 portra
 **Weather Widget**
 ![Weather widget showing current conditions and 7-day forecast](public/screenshots/weather-widget.png)
 
-*Current conditions and 7-day forecast*
+_Current conditions and 7-day forecast_
 
 </td>
 <td width="33%">
@@ -48,7 +48,7 @@ A smart magic mirror display built with Next.js, designed for a 1080x2560 portra
 **Calendar Widget**
 ![Calendar widget displaying today's and tomorrow's events](public/screenshots/calendar-widget.png)
 
-*Today's events, tomorrow's preview*
+_Today's events, tomorrow's preview_
 
 </td>
 </tr>
@@ -58,15 +58,16 @@ A smart magic mirror display built with Next.js, designed for a 1080x2560 portra
 **AI Summary**
 ![AI daily briefing with personalized greeting](public/screenshots/ai-summary-widget.png)
 
-*Personalized daily briefing*
+_Personalized daily briefing_
 
 </td>
 <td width="33%">
 
 **Spotify Now Playing**
+
 <!-- ![Spotify widget showing currently playing track](public/screenshots/spotify-widget.png) -->
 
-*Real-time track display*
+_Real-time track display_
 
 </td>
 <td width="33%">
@@ -74,7 +75,7 @@ A smart magic mirror display built with Next.js, designed for a 1080x2560 portra
 **Commute Times**
 ![Commute widget with traffic-aware routing](public/screenshots/commute-widget.png)
 
-*Traffic-aware departure times*
+_Traffic-aware departure times_
 
 </td>
 </tr>
@@ -84,15 +85,16 @@ A smart magic mirror display built with Next.js, designed for a 1080x2560 portra
 **News Headlines**
 ![News widget showing latest headlines](public/screenshots/news-widget.png)
 
-*Latest headlines from RSS feeds*
+_Latest headlines from RSS feeds_
 
 </td>
 <td width="33%">
 
 **Spotify Now Playing**
+
 <!-- ![Spotify widget showing currently playing track](public/screenshots/spotify-widget.png) -->
 
-*Real-time track display (when music is playing)*
+_Real-time track display (when music is playing)_
 
 </td>
 <td width="33%">
@@ -107,14 +109,16 @@ A smart magic mirror display built with Next.js, designed for a 1080x2560 portra
 <!-- See public/demos/README.md for recording instructions -->
 
 **Clock Digit Transitions**
+
 <!-- ![Animated clock showing digit transition effect](public/demos/clock-transition.gif) -->
 
-*Smooth "Waterfall of Time" animation as digits change*
+_Smooth "Waterfall of Time" animation as digits change_
 
 **Auto-Refresh on Deploy**
+
 <!-- ![Automatic page refresh after deployment](public/demos/auto-refresh.gif) -->
 
-*Seamless updates when new versions are deployed*
+_Seamless updates when new versions are deployed_
 
 ---
 
@@ -175,6 +179,25 @@ npm run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) to view the mirror.
+
+### Code Quality
+
+This project uses **pre-commit hooks** (Husky + lint-staged) to automatically lint and format code before commits. Hooks are installed automatically via `npm install`.
+
+On each commit, staged files are:
+
+- ✅ Linted with ESLint (auto-fixes applied)
+- ✅ Formatted with Prettier
+
+The CI pipeline then runs the full test suite (296 tests) before deployment.
+
+**Emergency bypass:** In rare cases where you need to bypass hooks (e.g., WIP commits, emergency hotfixes), use:
+
+```bash
+git commit --no-verify -m "your message"
+```
+
+Use sparingly - hooks exist to maintain code quality.
 
 ## Environment Variables
 
