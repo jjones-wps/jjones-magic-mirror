@@ -32,8 +32,8 @@ const config: Config = {
     '!src/generated/**',
     '!src/types/**',
     '!src/lib/auth/**',
-    '!src/app/admin/**',
-    '!src/app/api/admin/**',
+    '!src/app/admin/**', // Frontend admin panel (incomplete, no tests)
+    // Admin API routes now included - 150 tests, comprehensive coverage
     '!src/proxy.ts',
   ],
   coverageThreshold: {
@@ -45,7 +45,7 @@ const config: Config = {
     },
   },
   transformIgnorePatterns: [
-    '/node_modules/',
+    '/node_modules/(?!next-auth|@auth)',
     '^.+\\.module\\.(css|sass|scss)$',
   ],
   modulePathIgnorePatterns: ['<rootDir>/.next/'],
