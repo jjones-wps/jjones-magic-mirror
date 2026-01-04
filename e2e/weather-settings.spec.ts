@@ -36,6 +36,15 @@ test.describe('Weather Settings', () => {
     const fahrenheitRadio = page.getByRole('radio', { name: /Fahrenheit/ });
     const celsiusRadio = page.getByRole('radio', { name: /Celsius/ });
 
+    // Close any open autocomplete dropdowns by clicking on the page heading
+    await page.getByRole('heading', { name: 'Weather Settings' }).click();
+
+    // Wait for any autocomplete listbox to be hidden
+    const listbox = page.getByRole('listbox');
+    await expect(listbox).toBeHidden({ timeout: 2000 }).catch(() => {
+      // Listbox might not exist or already hidden, continue anyway
+    });
+
     // Get initial state
     const initialFahrenheit = await fahrenheitRadio.isChecked();
 
