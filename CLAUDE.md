@@ -348,8 +348,8 @@ npm run test:e2e:report    # Show last test report
 ```
 
 **Test Status**:
-- ✅ **31 tests passing** - 91% success rate (Navigation, Calendar, Weather fully passing)
-- ❌ **3 tests failing** - AI Behavior form persistence edge cases (React state detection)
+- ✅ **34 tests passing** - 100% success rate (All E2E tests passing)
+- ✅ Navigation, Calendar, Weather, AI Behavior - Full coverage
 
 **Authentication Setup**:
 
@@ -370,10 +370,9 @@ Credentials can be customized via environment variables:
 - ✅ No console errors during navigation
 - ✅ Calendar settings: sliders, dropdowns, feed management, persistence
 - ✅ Weather settings: location autocomplete, temperature units, validation
-- ✅ AI Behavior: model selection, parameter sliders, validation
-- ❌ AI Behavior form persistence (3 tests - React state detection edge cases)
+- ✅ AI Behavior: model selection, parameter sliders, validation, form persistence
 
-**Note**: Navigation, Calendar, and Weather features have 100% E2E test coverage. AI Behavior has 62.5% coverage (5/8 tests passing).
+**Note**: Navigation, Calendar, Weather, and AI Behavior features have 100% E2E test coverage (34/34 tests passing).
 
 ## Common Deployment Issues
 
@@ -502,9 +501,8 @@ The project has a robust CI/CD pipeline, but certain issues can occur. See `docs
 
 **Test Results**:
 
-- ✅ **31 tests passing (91% success rate)** - Full coverage for Navigation, Calendar, Weather
-- ❌ **3 tests failing** - AI Behavior form persistence (React state detection edge cases)
-- ⏱️ **6.8 seconds** runtime
+- ✅ **34 tests passing (100% success rate)** - Full coverage for Navigation, Calendar, Weather, AI Behavior
+- ⏱️ **~47 seconds** runtime
 
 **Key Fixes**:
 
