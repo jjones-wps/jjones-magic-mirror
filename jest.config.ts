@@ -24,6 +24,7 @@ const config: Config = {
     '/out/',
     '/build/',
     '/__tests__/helpers/',
+    '/e2e/', // Playwright E2E tests - run separately with npm run test:e2e
   ],
   collectCoverageFrom: [
     'src/**/*.{js,jsx,ts,tsx}',
