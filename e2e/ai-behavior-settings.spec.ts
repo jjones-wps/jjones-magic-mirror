@@ -12,7 +12,13 @@ import { test, expect } from '@playwright/test';
  */
 
 test.describe('AI Behavior Settings', () => {
-  test.beforeEach(async ({ page }) => {
+  test.beforeEach(async ({ page, request }) => {
+    // Reset AI behavior settings in database to ensure test isolation
+    // (E2E tests run in parallel and share the same database)
+    await request.delete('/api/test/reset-ai-behavior').catch(() => {
+      // Endpoint might not exist yet, that's OK
+    });
+
     await page.goto('/admin/ai-behavior');
     await expect(page.getByRole('heading', { name: 'AI Behavior Settings' })).toBeVisible();
 
@@ -23,29 +29,36 @@ test.describe('AI Behavior Settings', () => {
 
     // Wait for Save button to appear (indicates form is ready)
     await expect(page.getByRole('button', { name: 'Save Settings' })).toBeVisible({ timeout: 10000 });
+
+    // Ensure Save button starts disabled (confirms originalSettings is set)
+    await expect(page.getByRole('button', { name: 'Save Settings' })).toBeDisabled();
+
+    // Additional wait to ensure React has fully hydrated
+    await page.waitForTimeout(1000);
   });
 
   test('should persist settings after save and page reload', async ({ page }) => {
     // Modify temperature slider (using aria-label for unambiguous selection)
     const temperatureSlider = page.getByRole('slider', { name: 'Temperature' });
-    await temperatureSlider.fill('0.7');
+    await temperatureSlider.fill('1.2');
 
     // Verify temperature display updates
-    await expect(page.locator('text=/Temperature:\\s*0\\.7/')).toBeVisible({ timeout: 2000 });
+    await expect(page.locator('text=/Temperature:\\s*1\\.2/')).toBeVisible({ timeout: 2000 });
 
     // Select "Low" verbosity
     await page.getByRole('radio', { name: /Low - Essential facts only/ }).check();
     await expect(page.getByRole('radio', { name: /Low - Essential facts only/ })).toBeChecked();
 
-    // Uncheck "Stress-Aware Mode" (click the visible toggle switch instead of hidden checkbox)
+    // Uncheck "Stress-Aware Mode" (click parent label since checkbox is styled/hidden)
     const stressAwareCheckbox = page.locator('input[type="checkbox"][aria-label="Stress-Aware Mode"]');
-    const stressAwareLabel = stressAwareCheckbox.locator('..');  // Get parent label element
-
+    const stressAwareLabel = stressAwareCheckbox.locator('..');
     if (await stressAwareCheckbox.isChecked()) {
-      await stressAwareLabel.scrollIntoViewIfNeeded();
-      await stressAwareLabel.click(); // Click the visible label, not the hidden checkbox
+      await stressAwareLabel.click();
     }
     await expect(stressAwareCheckbox).not.toBeChecked();
+
+    // Wait for React to process state updates
+    await page.waitForTimeout(500);
 
     // Verify Save button becomes enabled
     const saveButton = page.getByRole('button', { name: 'Save Settings' });
@@ -61,9 +74,9 @@ test.describe('AI Behavior Settings', () => {
     await page.reload();
     await expect(page.getByRole('heading', { name: 'AI Behavior Settings' })).toBeVisible();
 
-    // Verify temperature persisted
-    const reloadedTemperature = page.locator('input[type="range"][max="2"]');
-    await expect(reloadedTemperature).toHaveValue('0.7');
+    // Verify temperature persisted (use aria-label to avoid ambiguity with presencePenalty slider)
+    const reloadedTemperature = page.getByRole('slider', { name: 'Temperature' });
+    await expect(reloadedTemperature).toHaveValue('1.2');
 
     // Verify verbosity persisted
     await expect(page.getByRole('radio', { name: /Low - Essential facts only/ })).toBeChecked();
@@ -153,18 +166,20 @@ test.describe('AI Behavior Settings', () => {
   test('should update user names field', async ({ page }) => {
     const userNamesField = page.getByRole('textbox', { name: /User Names/ });
 
-    // Clear and enter new names (use pressSequentially to trigger React onChange properly)
+    // Clear and enter new names
     await userNamesField.click();
     await userNamesField.clear();
-    await userNamesField.pressSequentially('Alice, Bob, Charlie', { delay: 50 });
-    await userNamesField.blur(); // Trigger change detection
+    await userNamesField.fill('Alice, Bob, Charlie');
 
     // Verify Save button is enabled
     await expect(page.getByRole('button', { name: 'Save Settings' })).toBeEnabled();
 
     // Save changes
     await page.getByRole('button', { name: 'Save Settings' }).click();
-    await expect(page.getByRole('button', { name: 'Save Settings' })).toBeDisabled({ timeout: 5000 });
+
+    // Wait for success toast (indicates save completed)
+    await expect(page.locator('text=Settings saved')).toBeVisible({ timeout: 5000 });
+    await expect(page.getByRole('button', { name: 'Save Settings' })).toBeDisabled();
 
     // Reload and verify
     await page.reload();
@@ -185,7 +200,7 @@ test.describe('AI Behavior Settings', () => {
     await stressAwareLabel.scrollIntoViewIfNeeded();
     await celebrationLabel.scrollIntoViewIfNeeded();
 
-    // Set stress-aware to false, celebration to true (click visible labels)
+    // Set stress-aware to false, celebration to true (click labels since checkboxes are styled/hidden)
     if (await stressAware.isChecked()) {
       await stressAwareLabel.click();
     }
@@ -193,8 +208,12 @@ test.describe('AI Behavior Settings', () => {
       await celebrationLabel.click();
     }
 
+    // Verify Save button is enabled before clicking
+    const saveButton = page.getByRole('button', { name: 'Save Settings' });
+    await expect(saveButton).toBeEnabled();
+
     // Save
-    await page.getByRole('button', { name: 'Save Settings' }).click();
+    await saveButton.click();
     await expect(page.getByRole('button', { name: 'Save Settings' })).toBeDisabled({ timeout: 5000 });
 
     // Reload
@@ -230,7 +249,10 @@ test.describe('AI Behavior Settings', () => {
 
     // Save and reload
     await page.getByRole('button', { name: 'Save Settings' }).click();
-    await expect(page.getByRole('button', { name: 'Save Settings' })).toBeDisabled({ timeout: 5000 });
+
+    // Wait for success toast (indicates save completed)
+    await expect(page.locator('text=Settings saved')).toBeVisible({ timeout: 5000 });
+    await expect(page.getByRole('button', { name: 'Save Settings' })).toBeDisabled();
 
     await page.reload();
     await expect(page.getByRole('heading', { name: 'AI Behavior Settings' })).toBeVisible();
