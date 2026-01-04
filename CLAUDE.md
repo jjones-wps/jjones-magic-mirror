@@ -395,6 +395,92 @@ The project has a robust CI/CD pipeline, but certain issues can occur. See `docs
 
 ## Recent Session History
 
+### January 3, 2026 - Documentation Audit Phase 3-6 & Enhanced Architecture Diagrams
+
+**Primary Achievement**: Completed documentation audit Phases 3-6, added comprehensive Mermaid diagrams to ARCHITECTURE.md.
+
+**PR #11 - Playwright E2E Testing**:
+
+- ✅ Reviewed PR #11 with 4 review comments (all recommended APPROVE)
+- ✅ Test results: 31/34 passing (91%), 3 failing tests documented as edge cases
+- ✅ Merged to main using squash strategy (commit: `188b27c`)
+- ✅ Cleaned up feature branch after merge
+
+**Phase 3 - Reorganize Documentation Structure** (COMPLETE):
+
+- ✅ Task 3.1: Verified docs/ directory structure exists
+- ✅ Task 3.2: Verified all documentation files in correct locations
+- ✅ Task 3.3: Validated internal links with markdown-link-check
+  - Fixed broken TomTom Routing API link (404 → working URL)
+  - All 29 links in docs/README.md passing
+  - All 19 links in root README.md passing (localhost:3000 expected failure)
+
+**Phase 4 - Add Supporting Documentation** (ALREADY COMPLETE):
+
+- ✅ Task 4.1: CONTRIBUTING.md exists (577 lines)
+- ✅ Task 4.2: SECURITY.md exists (302 lines)
+- ✅ Task 4.3: CHANGELOG.md exists (238 lines, follows Keep a Changelog)
+- ✅ Task 4.4: GitHub templates exist (PR template + 2 issue templates)
+- **Note**: All Phase 4 tasks were already complete from January 1, 2026 session
+
+**Phase 5 - Visual Enhancements** (IN PROGRESS):
+
+- ✅ Task 5.3: Created enhanced architecture diagrams with color coding
+  - **Widget Lifecycle State Machine** (5 states, color-coded by type)
+    - States: Unmounted → Mounting → Loading → LoadingData → Ready ↔ Error
+    - Color legend: Blue (initial), Yellow (loading), Green (success), Red (error)
+    - Detailed annotations with typical durations (~10-50ms cached, ~200-500ms external API)
+    - Documents periodic refresh intervals (15 min weather, 5 min commute, 15 sec Spotify)
+  - **Multi-Layer Caching Flow** (4 layers, flowchart)
+    - Layers: Client → Server Cache → Database → External API
+    - Color legend: Blue (client), Orange (cache), Green (external), Purple (database)
+    - Illustrates stale-while-revalidate pattern with background refresh
+    - Performance metrics: cache hit ~10-50ms, cache miss ~200-500ms
+  - Fixed dark mode compatibility (removed hardcoded `color:#000` to match existing diagrams)
+  - Validated Mermaid syntax with industry tools
+- ⏭️ Task 5.1: Screenshots deferred (requires Pi running for screen capture)
+- ⏭️ Task 5.2: GIF demos deferred (requires Pi running for screen capture)
+
+**Phase 6 - Advanced Documentation** (DEFERRED):
+
+- ✅ Verified `openapi.yaml` exists (820 lines, valid OpenAPI 3.0.3 spec)
+- ✅ Verified `docs/API_DOCUMENTATION.md` exists (2,664 lines comprehensive documentation)
+- ✅ Verified `docs/OPENAPI.md` exists (330 lines usage guide)
+- ✅ Assessed API documentation quality: **EXCELLENT** for agentic coding
+  - All 15 endpoints documented with TypeScript types and examples
+  - Request/response schemas, error codes, caching strategies
+  - Advanced patterns: retry logic, React hooks, parallel fetching
+  - Machine-readable spec + human-readable docs
+- ⏭️ **Both Phase 6 tasks deferred** (optional P4 priority):
+  - Task 6.1: Self-hosted Swagger UI (nice-to-have, online tools sufficient)
+  - Task 6.2: Docusaurus site (significant effort, marginal benefit)
+
+**Documentation Audit Progress**:
+
+- **Phase 1**: ✅ Complete (4/4 tasks) - Jan 1, 2026
+- **Phase 2**: ✅ Complete (2/2 tasks) - Jan 3, 2026
+- **Phase 3**: ✅ Complete (3/3 tasks) - Jan 3, 2026
+- **Phase 4**: ✅ Complete (4/4 tasks) - Already existed from Jan 1, 2026
+- **Phase 5**: 🔄 In Progress (1/3 tasks) - Task 5.3 complete
+- **Phase 6**: ⏭️ Deferred (0/2 optional tasks)
+- **Overall**: 14/16 required tasks completed (88%)
+
+**Files Modified**:
+
+- `docs/README.md` - Fixed TomTom Routing API link
+- `docs/ARCHITECTURE.md` - Added 187 lines (2 comprehensive Mermaid diagrams)
+- `dev/active/docs-audit/docs-audit-tasks.md` - Updated progress tracking (gitignored)
+
+**Commits**:
+
+- `66f76ec` - "docs(architecture): add enhanced Mermaid diagrams for widget lifecycle and caching strategy"
+- Earlier in session: Fixed broken documentation link
+
+**Key Decisions**:
+
+- Phase 6 tasks deemed optional/deferred - existing API documentation exceeds requirements for AI-assisted development
+- Phase 5 remaining tasks (screenshots/GIFs) require Pi availability for screen capture
+
 ### January 3, 2026 - Playwright E2E Testing Implementation
 
 **Primary Achievement**: Implemented comprehensive Playwright E2E testing suite for admin portal.
