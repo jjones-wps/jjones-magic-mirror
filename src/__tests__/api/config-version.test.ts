@@ -43,7 +43,7 @@ describe('GET /api/config-version', () => {
     expect(response.status).toBe(200);
     expect(data).toEqual({
       version: 5,
-      updatedAt: mockDate.toISOString(),
+      updatedAt: mockDate, // NextResponse.json serializes Date objects
     });
   });
 
