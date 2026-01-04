@@ -11,10 +11,12 @@ import { test, expect } from '@playwright/test';
  * - Radio button selections (verbosity, tone, humorLevel)
  */
 
+test.describe.configure({ mode: 'serial' });
+
 test.describe('AI Behavior Settings', () => {
   test.beforeEach(async ({ page, request }) => {
     // Reset AI behavior settings in database to ensure test isolation
-    // (E2E tests run in parallel and share the same database)
+    // Serial mode prevents parallel test interference with shared database
     await request.delete('/api/test/reset-ai-behavior').catch(() => {
       // Endpoint might not exist yet, that's OK
     });
